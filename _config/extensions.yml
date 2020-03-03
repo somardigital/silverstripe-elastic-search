@@ -1,0 +1,6 @@
+---
+Name: somar_search_extensions
+---
+Page:
+  extensions:
+    - Somar\Search\Extension\SearchablePageExtension

@@ -1,8 +1,8 @@
 {
-  "name": "somardesignstudios/silverstripe-elastic-search",
-  "description": "A silverstripe module providing search with elasticsearch",
-  "type": "silverstripe-module",
-  "require": {
-    "php": ">=7.1.0"
-  }
+    "name": "somardesignstudios/silverstripe-elastic-search",
+    "description": "A silverstripe module providing search with elasticsearch",
+    "type": "silverstripe-vendormodule",
+    "require": {
+        "php": ">=7.1.0"
+    }
 }

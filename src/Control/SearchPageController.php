@@ -1,0 +1,101 @@
+<?php
+
+namespace Somar\Search\Control;
+
+use PageController;
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Environment;
+use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\FieldType\DBText;
+use SilverStripe\ORM\PaginatedList;
+use SilverStripe\View\ArrayData;
+use SilverStripe\View\Requirements;
+use Somar\Search\ElasticSearchService;
+
+class SearchPageController extends PageController
+{
+    private static $allowed_actions = [
+        'index',
+    ];
+
+    /**
+     * @param null $action
+     *
+     * @return string
+     */
+    public function Link($action = null)
+    {
+        return Controller::join_links(
+            Director::baseURL(),
+            'search',
+            $action
+        );
+    }
+
+    /**
+     * @return \SilverStripe\ORM\FieldType\DBHTMLText
+     */
+    public function index(HTTPRequest $request)
+    {
+        $query = $request->getVar('search');
+        $data = $this->getData($query);
+
+        $results = PaginatedList::create($data, $request)->setPageLength(5);
+
+        return $this->customise([
+            'Title' => 'Search GWRC',
+            'Results' => $results,
+            'Query' => $query ? $query : null,
+        ])->renderWith([
+            'GWRC\\Website\\PageType\\Layout\\Search',
+            'Page',
+        ]);
+    }
+
+    protected function init()
+    {
+        parent::init();
+
+        $liveReload = Environment::getEnv('LIVE_RELOAD_URL');
+
+        if (!empty($liveReload)) {
+            Requirements::javascript(Environment::getEnv('LIVE_RELOAD_URL'));
+        }
+
+        // Requirements::css('site.css');
+        // Requirements::javascript('site.js');
+    }
+
+    protected function getData($term)
+    {
+        $service = new ElasticSearchService();
+        $results = $service->searchDocuments([
+            'term' => $term,
+        ]);
+
+        $data = new ArrayList();
+
+        foreach ($results['hits']['hits'] as $result) {
+            $resultData = $result['_source'];
+
+            switch ($resultData['type']) {
+                default:
+                    $type = 'Page';
+                    $summary = DBText::create()
+                        ->setValue(str_replace(["\n", "\t"], '', $resultData['content']))
+                        ->Summary(80);
+            }
+
+            $data->push(ArrayData::create([
+                'Title' => $resultData['title'],
+                'Summary' => $summary,
+                'Link' => $resultData['url'],
+                'Type' => $type,
+            ]));
+        }
+
+        return $data;
+    }
+}
