@@ -39,17 +39,20 @@ class SearchPageController extends PageController
      */
     public function index(HTTPRequest $request)
     {
-        $query = $request->getVar('search');
-        $data = $this->getData($query);
+        $query = $request->getVar('search') ?? null;
+        $results = [];
 
-        $results = PaginatedList::create($data, $request)->setPageLength(5);
+        if (!empty($query)) {
+            $data = $this->getData($query);
+            $results = PaginatedList::create($data, $request)->setPageLength(5);
+        }
 
         return $this->customise([
             'Title' => 'Search GWRC',
             'Results' => $results,
-            'Query' => $query ? $query : null,
+            'Query' => $query,
         ])->renderWith([
-            'GWRC\\Website\\PageType\\Layout\\Search',
+            'Somar\\Search\\Layout\\SearchPage',
             'Page',
         ]);
     }
