@@ -3,6 +3,9 @@
     "description": "A silverstripe module providing search with elasticsearch",
     "type": "silverstripe-vendormodule",
     "require": {
-        "php": ">=7.1.0"
+        "php": ">=7.1.0",
+        "elasticsearch/elasticsearch": "^7.6",
+        "ramsey/uuid": "^3.9",
+        "symbiote/silverstripe-queuedjobs": "^4.5"
     }
 }
