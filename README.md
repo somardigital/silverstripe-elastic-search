@@ -5,9 +5,9 @@ Silverstripe module to provide site-wide content search with elasticsearch
 ## Requirements
 
 * SilverStripe ^4.0
-* Elastic Search
-* Other server requirement
-* Etc
+* [elasticsearch-php](https://github.com/elastic/elasticsearch-php)
+* [ramsey/uuid](https://github.com/ramsey/uuid)
+* [SilverStripe Queued Jobs Module](https://github.com/symbiote/silverstripe-queuedjobs)
 
 ## Installation
 Add some installation instructions here, having a 1 line composer copy and paste is useful. 
