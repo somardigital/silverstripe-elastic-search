@@ -2,11 +2,14 @@
 
 namespace Somar\Search\Extension;
 
-use Psr\Log\LoggerInterface;
-use Ramsey\Uuid\Uuid;
+use SilverStripe\ORM\DataExtension;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
-use SilverStripe\ORM\DataExtension;
+
+use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
+
+use Somar\Search\ElasticSearchService;
 
 /**
  * Allow a Page to be indexed in Elastic.
