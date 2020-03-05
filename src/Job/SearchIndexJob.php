@@ -2,12 +2,12 @@
 
 namespace Somar\Search\Job;
 
-use Somar\Search\ElasticSearchService;
-use Page;
-use SilverStripe\SiteConfig\SiteConfig;
-use SilverStripe\Versioned\Versioned;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
+use Page;
+use SilverStripe\Versioned\Versioned;
+use Somar\Search\ElasticSearchService;
+
 
 /**
  * Re-index all content in the site to Elastic Search.
@@ -52,11 +52,6 @@ class SearchIndexJob extends AbstractQueuedJob
             $this->messages[] = 'Indexed #' . $this->totalSteps . ' pages';
             $this->isComplete = true;
             $this->requeue();
-
-            // Set last index
-            $conf = SiteConfig::current_site_config();
-            $conf->LastSearchIndex = date('Y-m-d H:i:s');
-            $conf->write();
         }
     }
 
@@ -68,19 +63,10 @@ class SearchIndexJob extends AbstractQueuedJob
 
     private function pagesToIndex()
     {
-        $conf = SiteConfig::current_site_config();
-        $lastIndex = $conf->LastSearchIndex;
-
         $original_stage = Versioned::get_stage();
         Versioned::set_stage(Versioned::LIVE);
 
         $pages = Page::get();
-
-        if ($lastIndex) {
-            return $pages->filter([
-                'LastEdited:GreaterThan' => $lastIndex,
-            ]);
-        }
 
         Versioned::set_stage($original_stage);
 

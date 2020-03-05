@@ -35,6 +35,31 @@ class ElasticSearchService
             ->build();
     }
 
+    public function getIndexName(): string
+    {
+        return $this->index;
+    }
+
+    /**
+     * Creates an index if it doesn't exist
+     *
+     * @return boolean successfully created
+     */
+    public function createIndex(): bool
+    {
+        $params = [
+            'index' => $this->index
+        ];
+
+        $exists = $this->client->indices()->exists($params);
+        if (!$exists) {
+            $this->client->indices()->create($params);
+            return true;
+        }
+
+        return false;
+    }
+
     public function setIndexMappings()
     {
         return $this->client->indices()->putMapping([

@@ -5,10 +5,12 @@ namespace Somar\Search\Extension;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\DatetimeField;
 
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
-
+use SilverStripe\Core\Convert;
+use SilverStripe\ORM\FieldType\DBField;
 use Somar\Search\ElasticSearchService;
 
 /**
@@ -17,6 +19,7 @@ use Somar\Search\ElasticSearchService;
 class SearchablePageExtension extends DataExtension
 {
     private static $db = [
+        "LastIndexed" => "Datetime",
         'GUID' => 'Varchar(40)',
     ];
 
@@ -25,6 +28,52 @@ class SearchablePageExtension extends DataExtension
         $fields->removeByName([
             'GUID',
         ]);
+    }
+
+    public function updateSettingsFields(FieldList $fields)
+    {
+        $fields->insertAfter(
+            'Visibility',
+            DatetimeField::create('LastIndexed')->setReadonly(true)
+        );
+    }
+
+    public function getPlainContent(): string
+    {
+        if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
+            $content = $this->owner->getElementsForSearch();
+            // Strip line breaks from elemental markup
+            $content = str_replace("\n", " ", $content);
+            // Decode HTML entities back to plain text
+            return trim(Convert::xml2raw($content));
+        } else {
+            return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
+        }
+    }
+
+    /**
+     * Flattened representation of Page content to push to Elastic.
+     */
+    public function searchData()
+    {
+        // cannot index a document without a GUID
+        // write this Page to generate a GUID
+        if (empty($this->owner->GUID)) {
+            $this->logger()->error("Attempted to index a page, but it had no GUID. Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+
+            return null;
+        }
+
+        return [
+            'guid' => $this->owner->GUID,
+            'id' => $this->owner->ID,
+            'title' => $this->owner->Title,
+            'content' => $this->owner->getPlainContent(),
+            'url' => $this->owner->Link(),
+            'type' => $this->owner->ClassName,
+            'created' => date(\DateTime::ISO8601, strtotime($this->owner->Created)),
+            'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
+        ];
     }
 
     /**
@@ -52,6 +101,7 @@ class SearchablePageExtension extends DataExtension
                 $service = new ElasticSearchService();
                 $service->putDocument($searchData);
             } catch (\Exception $e) {
+                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
             }
         }
     }
@@ -59,40 +109,17 @@ class SearchablePageExtension extends DataExtension
     /**
      * Remove this page from elastic index.
      */
-    public function onBeforeDelete()
+    public function onAfterDelete()
     {
-        parent::onBeforeDelete();
+        parent::onAfterDelete();
 
         try {
             $service = new ElasticSearchService();
             $service->removeDocument($this->owner->GUID);
         } catch (\Exception $e) {
+            $this->logger()->error("Unable to remove page from elastic index {$service->getIndexName()} onDelete. Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. Page GUID: {$this->owner->GUID}");
         }
-    }
-
-    /**
-     * Flattened representation of Page content to push to Elastic.
-     */
-    public function searchData()
-    {
-        // cannot index a document without a GUID
-        // write this Page to generate a GUID
-        if (empty($this->owner->GUID)) {
-            $this->logger()->error("Attempted to index a page, but it had no GUID. Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-
-            return null;
-        }
-
-        return [
-            'guid' => $this->owner->GUID,
-            'id' => $this->owner->ID,
-            'title' => $this->owner->Title,
-            'content' => $this->owner->getElementsForSearch(),
-            'url' => $this->owner->Link(),
-            'type' => $this->owner->ClassName,
-            'created' => date(\DateTime::ISO8601, strtotime($this->owner->Created)),
-            'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
-        ];
     }
 
     /**

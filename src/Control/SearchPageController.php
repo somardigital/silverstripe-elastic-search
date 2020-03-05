@@ -48,27 +48,13 @@ class SearchPageController extends PageController
         }
 
         return $this->customise([
-            'Title' => 'Search GWRC',
+            'Title' => 'Search Results',
             'Results' => $results,
             'Query' => $query,
         ])->renderWith([
             'Somar\\Search\\Layout\\SearchPage',
             'Page',
         ]);
-    }
-
-    protected function init()
-    {
-        parent::init();
-
-        $liveReload = Environment::getEnv('LIVE_RELOAD_URL');
-
-        if (!empty($liveReload)) {
-            Requirements::javascript(Environment::getEnv('LIVE_RELOAD_URL'));
-        }
-
-        // Requirements::css('site.css');
-        // Requirements::javascript('site.js');
     }
 
     protected function getData($term)

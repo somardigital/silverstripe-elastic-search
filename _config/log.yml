@@ -1,5 +1,5 @@
 ---
-Name: somar-search-errors
+Name: somar_search_errors
 Only:
   environment: dev
 ---
