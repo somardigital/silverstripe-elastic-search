@@ -1,0 +1,27 @@
+---
+Name: somar_search
+---
+Somar\Search\ElasticSearchService:
+  mappingProperties:
+    id:
+      type: text
+      store: true
+    title:
+      type: text
+      analyzer: standard
+    content:
+      type: text
+      analyzer: standard
+      store: true
+    url:
+      type: text
+      store: true
+    type:
+      type: keyword
+      store: true
+    created:
+      type: date
+      store: true
+    last_indexed:
+      type: date
+      store: true

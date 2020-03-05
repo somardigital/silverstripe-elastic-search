@@ -2,11 +2,58 @@
 
 namespace Somar\Search;
 
+use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Elasticsearch\ClientBuilder;
 
 class ElasticSearchService
 {
+    use Configurable;
+
+    /**
+     * @config
+     *
+     * Add addtional mappings by adding a `search.yml` config to your own project. e.g.
+     *
+     * ---
+     * Name: gwrc_search
+     * After:
+     *   - "#somar_search"
+     * ---
+     * Somar\Search\ElasticSearchService:
+     *   mappingProperties:
+     *     custom_field_one:
+     *       type: text
+     *       store: true
+     *     custom_field_two:
+     *       type: date
+     *       store: true
+     *
+     *
+     * The resulting php array would be of the form:
+     *
+     * $mappingProperties = [
+     *     'id' => [
+     *         'type' => 'text',
+     *         'store' => true,
+     *     ],
+     *     'type' => [
+     *         'type' => 'keyword',
+     *         'store' => true,
+     *     ],
+     *     'title' => [
+     *         'type' => 'text',
+     *         'analyzer' => 'standard',
+     *     ],
+     *     'content' => [
+     *         'type' => 'text',
+     *         'analyzer' => 'standard',
+     *         'store' => true,
+     *     ]
+     * ];
+     */
+    private static $mappingProperties = [];
+
     private $client;
     private $index;
 
@@ -68,49 +115,7 @@ class ElasticSearchService
                 '_source' => [
                     'enabled' => true,
                 ],
-                'properties' => [
-                    'id' => [
-                        'type' => 'text',
-                        'store' => true,
-                    ],
-                    'title' => [
-                        'type' => 'text',
-                        'analyzer' => 'standard',
-                    ],
-                    'content' => [
-                        'type' => 'text',
-                        'analyzer' => 'standard',
-                        'store' => true,
-                    ],
-                    'url' => [
-                        'type' => 'text',
-                        'store' => true,
-                    ],
-                    'type' => [
-                        'type' => 'keyword',
-                        'store' => true,
-                    ],
-                    'created' => [
-                        'type' => 'date',
-                        'store' => true,
-                    ],
-                    'last_edited' => [
-                        'type' => 'date',
-                        'store' => true,
-                    ],
-                    'code' => [
-                        'type' => 'text',
-                        'store' => true,
-                    ],
-                    'mode' => [
-                        'type' => 'keyword',
-                        'store' => true,
-                    ],
-                    'severity' => [
-                        'type' => 'keyword',
-                        'store' => true,
-                    ],
-                ],
+                'properties' => $this->config()->mappingProperties,
             ],
         ]);
     }
