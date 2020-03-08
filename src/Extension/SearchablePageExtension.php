@@ -6,11 +6,12 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DatetimeField;
+use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\ORM\FieldType\DBField;
+use SilverStripe\Core\Convert;
 
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
-use SilverStripe\Core\Convert;
-use SilverStripe\ORM\FieldType\DBField;
 use Somar\Search\ElasticSearchService;
 
 /**
@@ -72,7 +73,7 @@ class SearchablePageExtension extends DataExtension
             'url' => $this->owner->Link(),
             'type' => $this->owner->ClassName,
             'created' => date(\DateTime::ISO8601, strtotime($this->owner->Created)),
-            'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
+            'last_indexed' => date(\DateTime::ISO8601, strtotime($this->owner->LastIndexed)),
         ];
     }
 
@@ -90,9 +91,10 @@ class SearchablePageExtension extends DataExtension
     }
 
     /**
+     * BUG: This hook is never called. https://github.com/dnadesign/silverstripe-elemental/issues/779
      * Index this page's content.
      */
-    public function onAfterPublish()
+    public function onBeforePublish()
     {
         $searchData = $this->owner->searchData();
 
@@ -100,10 +102,13 @@ class SearchablePageExtension extends DataExtension
             try {
                 $service = new ElasticSearchService();
                 $service->putDocument($searchData);
+                $this->logger()->error("did the thing");
             } catch (\Exception $e) {
                 $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
             }
         }
+
+        $this->owner->LastIndexed = DBDatetime::now()->Rfc2822();
     }
 
     /**

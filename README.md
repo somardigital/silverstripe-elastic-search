@@ -19,7 +19,7 @@ and update your module's composer.json to designate your code as a SilverStripe 
 composer require silverstripe-module/skeleton 4.x-dev
 ```
 
-## Example configuration
+## Elastic connection configuration
 Add your elasticsearch API keys
 
 ```
@@ -34,5 +34,28 @@ ELASTIC_WRITABLE_API_KEY=""
 # For front-end searches
 ELASTIC_READONLY_API_ID=""
 ELASTIC_READONLY_API_KEY=""
+  
+```
+
+## Field mappings configuration
+Page content will be flattened and stored in a standard set of fields defined in this module's `search.yml`
+
+You can add additional fields by adding a `search.yml` config to your own project. e.g.
+
+```yaml
+
+---
+Name: gwrc_search
+After:
+  - "#somar_search"
+---
+Somar\Search\ElasticSearchService:
+  mappingProperties:
+    custom_field_one:
+      type: text
+      store: true
+    custom_field_two:
+      type: date
+      store: true
   
 ```
