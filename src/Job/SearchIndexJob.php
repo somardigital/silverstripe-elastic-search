@@ -5,6 +5,7 @@ namespace Somar\Search\Job;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use Page;
+use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 
@@ -14,18 +15,28 @@ use Somar\Search\ElasticSearchService;
  */
 class SearchIndexJob extends AbstractQueuedJob
 {
+    use Configurable;
+
+    /**
+     * How many records are processed each step of the job
+     * @var int
+     */
+    private static $limit = 500;
+
     public function __construct($params = null)
     {
         $pages = $this->pagesToIndex();
+        $limit = $this->config()->get('limit');
+        $count = $pages->count();
 
         $this->currentStep = 0;
-        $this->totalSteps = $pages->count() ?: 1;
+        $this->totalSteps = $count ? ceil($count / $limit) : 1;
         $this->complete = false;
     }
 
     public function getTitle()
     {
-        return 'Search Index';
+        return 'Bulk Search Index';
     }
 
     public function process()
@@ -35,26 +46,42 @@ class SearchIndexJob extends AbstractQueuedJob
 
         ++$this->currentStep;
 
+        $this->update($this->config()->get('limit'));
+
+        if ($this->currentStep >= $this->totalSteps) {
+            $this->messages[] = 'Done.';
+            $this->isComplete = true;
+            $this->requeue();
+        }
+    }
+
+    private function update($limit)
+    {
         $service = new ElasticSearchService();
-        $page = $this->pagesToIndex()->limit(1, $this->currentStep - 1)->first();
+        $pages = $this->pagesToIndex()->limit($limit, ($this->currentStep - 1) * $limit);
+        $documents = [];
 
-        if ($page) {
-            $searchData = $page->searchData();
-
-            if ($searchData) {
-                try {
-                    $service->putDocument($searchData);
-                    $this->messages[] = 'Indexed page id: ' . $searchData['id'];
-                } catch (\Exception $e) {
-                    $this->messages[] = 'Exception: ' . $e->getMessage();
+        if ($pages->count()) {
+            foreach ($pages as $page) {
+                $searchData = $page->searchData();
+                if ($searchData) {
+                    $documents[] = $searchData;
                 }
             }
         }
 
-        if ($this->currentStep >= $this->totalSteps) {
-            $this->messages[] = 'Indexed #' . $this->totalSteps . ' pages';
-            $this->isComplete = true;
-            $this->requeue();
+        if (!empty($documents)) {
+            try {
+                $service->putDocuments($documents);
+            } catch (\Exception $e) {
+                $this->messages[] = 'Exception: ' . $e->getMessage();
+                throw $e;
+            }
+
+            $this->messages[] = sprintf(
+                'Indexed %s pages',
+                count($documents)
+            );
         }
     }
 

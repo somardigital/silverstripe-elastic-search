@@ -107,6 +107,15 @@ class ElasticSearchService
         return false;
     }
 
+    /**
+     * @param string $indexName
+     * @return bool
+     */
+    public function getIndex(string $indexName)
+    {
+        return $this->client->getIndex($indexName);
+    }
+
     public function setIndexMappings()
     {
         return $this->client->indices()->putMapping([
@@ -120,6 +129,19 @@ class ElasticSearchService
         ]);
     }
 
+    public function putDocuments($documents)
+    {
+        $body = [];
+        foreach ($documents as $doc) {
+            $body[] = ['index' => ['_index' => $this->index]];
+            $body[] = $doc;
+        }
+
+        return $this->client->bulk([
+            'index' => $this->index,
+            'body' => $body,
+        ]);
+    }
     public function putDocument($document)
     {
         return $this->client->index([
