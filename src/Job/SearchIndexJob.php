@@ -30,6 +30,9 @@ class SearchIndexJob extends AbstractQueuedJob
 
     public function process()
     {
+        // just in case that this job is run from the CMS
+        Versioned::set_default_reading_mode('Stage.' . Versioned::LIVE);
+
         ++$this->currentStep;
 
         $service = new ElasticSearchService();
