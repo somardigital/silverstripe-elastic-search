@@ -91,6 +91,38 @@ class SearchablePageExtension extends DataExtension
     }
 
     /**
+     * Workaround to detect elements that need published
+     * Related to: https://github.com/dnadesign/silverstripe-elemental/issues/779
+     *
+     * @return boolean
+     */
+    private function hasModifiedElementToPublish(): bool
+    {
+        foreach ($this->owner->hasOne() as $key => $class) {
+            if ($class !== 'DNADesign\Elemental\Models\ElementalArea') {
+                continue;
+            }
+            $area = $this->owner->$key();
+            foreach ($area->Elements() as $element) {
+                if ($element->isModifiedOnDraft() && !$element->isLiveVersion()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function onAfterWrite()
+    {
+        parent::onAfterWrite();
+
+        if ($this->hasModifiedElementToPublish()) {
+            $this->onBeforePublish();
+        }
+    }
+
+    /**
      * BUG: This hook is never called. https://github.com/dnadesign/silverstripe-elemental/issues/779
      * Index this page's content.
      */
@@ -102,7 +134,7 @@ class SearchablePageExtension extends DataExtension
             try {
                 $service = new ElasticSearchService();
                 $service->putDocument($searchData);
-                $this->logger()->error("did the thing");
+                $this->logger()->info("Re-indexed page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
             } catch (\Exception $e) {
                 $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
             }
