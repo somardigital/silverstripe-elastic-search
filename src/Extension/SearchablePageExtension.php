@@ -39,17 +39,25 @@ class SearchablePageExtension extends DataExtension
         );
     }
 
-    public function getPlainContent(): string
+    /**
+     * Re-index this page in Elastic
+     *
+     * @return void
+     */
+    public function putDocument()
     {
-        if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
-            $content = $this->owner->getElementsForSearch();
-            // Strip line breaks from elemental markup
-            $content = str_replace("\n", " ", $content);
-            // Decode HTML entities back to plain text
-            return trim(Convert::xml2raw($content));
-        } else {
-            return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
+        $searchData = $this->owner->searchData();
+
+        if ($searchData) {
+            try {
+                $service = new ElasticSearchService();
+                $service->putDocument($searchData);
+            } catch (\Exception $e) {
+                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+            }
         }
+
+        $this->owner->LastIndexed = DBDatetime::now()->Rfc2822();
     }
 
     /**
@@ -77,6 +85,19 @@ class SearchablePageExtension extends DataExtension
         ];
     }
 
+    public function getPlainContent(): string
+    {
+        if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
+            $content = $this->owner->getElementsForSearch();
+            // Strip line breaks from elemental markup
+            $content = str_replace("\n", " ", $content);
+            // Decode HTML entities back to plain text
+            return trim(Convert::xml2raw($content));
+        } else {
+            return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
+        }
+    }
+
     /**
      * Generate an ID for elastic.
      */
@@ -91,56 +112,11 @@ class SearchablePageExtension extends DataExtension
     }
 
     /**
-     * Workaround to detect elements that need published
-     * Related to: https://github.com/dnadesign/silverstripe-elemental/issues/779
-     *
-     * @return boolean
-     */
-    private function hasModifiedElementToPublish(): bool
-    {
-        foreach ($this->owner->hasOne() as $key => $class) {
-            if ($class !== 'DNADesign\Elemental\Models\ElementalArea') {
-                continue;
-            }
-            $area = $this->owner->$key();
-            foreach ($area->Elements() as $element) {
-                if ($element->isModifiedOnDraft() && !$element->isLiveVersion()) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public function onAfterWrite()
-    {
-        parent::onAfterWrite();
-
-        if ($this->hasModifiedElementToPublish()) {
-            $this->onBeforePublish();
-        }
-    }
-
-    /**
-     * BUG: This hook is never called. https://github.com/dnadesign/silverstripe-elemental/issues/779
-     * Index this page's content.
+     * Re-index this page's content if any top-level fields on the Page have changed
      */
     public function onBeforePublish()
     {
-        $searchData = $this->owner->searchData();
-
-        if ($searchData) {
-            try {
-                $service = new ElasticSearchService();
-                $service->putDocument($searchData);
-                $this->logger()->info("Re-indexed page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            } catch (\Exception $e) {
-                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            }
-        }
-
-        $this->owner->LastIndexed = DBDatetime::now()->Rfc2822();
+        $this->putDocument();
     }
 
     /**

@@ -4,3 +4,6 @@ Name: somar_search_extensions
 Page:
   extensions:
     - Somar\Search\Extension\SearchablePageExtension
+DNADesign\Elemental\Models\BaseElement:
+  extensions:
+    - Somar\Search\Extension\SearchableElementExtension
