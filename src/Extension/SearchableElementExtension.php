@@ -3,8 +3,6 @@
 namespace Somar\Search\Extension;
 
 use SilverStripe\ORM\DataExtension;
-use SilverStripe\Core\Injector\Injector;
-use Psr\Log\LoggerInterface;
 
 /**
  * Allow a Page to detect when Elemental content has changed
@@ -35,13 +33,5 @@ class SearchableElementExtension extends DataExtension
      */
     public function onBeforePublish()
     {
-    }
-
-    /**
-     * Get logger singleton.
-     */
-    private function logger()
-    {
-        return Injector::inst()->get(LoggerInterface::class);
     }
 }

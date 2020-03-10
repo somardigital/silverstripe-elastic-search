@@ -4,7 +4,9 @@ Only:
   environment: dev
 ---
 SilverStripe\Core\Injector\Injector:
-  Psr\Log\LoggerInterface:
+  Somar\Search\Log\SearchLogger:
+    constructor:
+      - "search-log"
     calls:
       LogFileHandler: [pushHandler, ["%$LogFileHandler"]]
   LogFileHandler:

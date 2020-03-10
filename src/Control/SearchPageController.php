@@ -6,12 +6,10 @@ use PageController;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
-use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\ORM\PaginatedList;
 use SilverStripe\View\ArrayData;
-use SilverStripe\View\Requirements;
 use Somar\Search\ElasticSearchService;
 
 class SearchPageController extends PageController

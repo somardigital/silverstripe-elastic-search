@@ -10,9 +10,9 @@ use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Convert;
 
-use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use Somar\Search\ElasticSearchService;
+use Somar\Search\Log\SearchLogger;
 
 /**
  * Allow a Page to be indexed in Elastic.
@@ -140,6 +140,6 @@ class SearchablePageExtension extends DataExtension
      */
     private function logger()
     {
-        return Injector::inst()->get(LoggerInterface::class);
+        return Injector::inst()->get(SearchLogger::class);
     }
 }
