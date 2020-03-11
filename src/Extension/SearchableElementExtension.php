@@ -2,6 +2,7 @@
 
 namespace Somar\Search\Extension;
 
+use GWRC\Website\PageType\HomePage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Versioned\Versioned;
@@ -20,8 +21,12 @@ class SearchableElementExtension extends DataExtension
     {
         $element = $this->owner;
         // Workaround to detect if this Element has changes that need published
-        if (!$this->owner->isLiveVersion() && $this->owner->isModifiedOnDraft()) {
-            $this->getParentPage($this->owner)->putDocument();
+        if (
+            !$element->IsNotSearchable &&
+            !$element->isLiveVersion() &&
+            $element->isModifiedOnDraft()
+        ) {
+            $this->getParentPage()->putDocument();
         }
     }
 
@@ -39,13 +44,18 @@ class SearchableElementExtension extends DataExtension
      * To fix incorrect behavior when nested elements
      *
      */
-    private function getParentPage($element)
+    public function getParentPage()
     {
+        // Allow to overwrite with custom function in element
+        if (method_exists($this->owner, 'getParentPage')) {
+            return $this->owner->getParentPage();
+        }
+
         // Change stage to draft in case of unpublished parent element
         $originalStage = Versioned::get_stage();
         Versioned::set_stage(Versioned::DRAFT);
 
-        $parent = $element->getPage();
+        $parent = $this->owner->getPage();
         while (!$parent instanceof SiteTree) {
             $parent = $parent->getPage();
         }
