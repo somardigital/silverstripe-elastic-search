@@ -24,9 +24,10 @@ class SearchableElementExtension extends DataExtension
         if (
             !$element->IsNotSearchable &&
             !$element->isLiveVersion() &&
-            $element->isModifiedOnDraft()
+            $element->isModifiedOnDraft() &&
+            $parentPage = $this->getParentPage()
         ) {
-            $this->getParentPage()->putDocument();
+            $parentPage->putDocument();
         }
     }
 
@@ -56,7 +57,8 @@ class SearchableElementExtension extends DataExtension
         Versioned::set_stage(Versioned::DRAFT);
 
         $parent = $this->owner->getPage();
-        while (!$parent instanceof SiteTree) {
+
+        while ($parent && !$parent instanceof SiteTree) {
             $parent = $parent->getPage();
         }
 
