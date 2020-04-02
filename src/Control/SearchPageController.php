@@ -40,12 +40,12 @@ class SearchPageController extends PageController
      */
     public function index(HTTPRequest $request)
     {
-        if (!Environment::getEnv('SS_HOT_RELOAD_URL')) {
+        if (!Environment::getEnv('SS_SEARCH_HOT_RELOAD_URL')) {
             Requirements::javascript('somardesignstudios/silverstripe-elastic-search: client/dist/js/app.js');
             Requirements::javascript('somardesignstudios/silverstripe-elastic-search: client/dist/js/chunk-vendors.js');
         } else {
-            Requirements::javascript(Environment::getEnv('SS_HOT_RELOAD_URL') . 'js/app.js');
-            Requirements::javascript(Environment::getEnv('SS_HOT_RELOAD_URL') . 'js/chunk-vendors.js');
+            Requirements::javascript(Environment::getEnv('SS_SEARCH_HOT_RELOAD_URL') . 'js/app.js');
+            Requirements::javascript(Environment::getEnv('SS_SEARCH_HOT_RELOAD_URL') . 'js/chunk-vendors.js');
         }
 
         Requirements::set_force_js_to_bottom(true);
@@ -58,22 +58,32 @@ class SearchPageController extends PageController
 
     public function search(HTTPRequest $request)
     {
-        $term = $request->getVar('q');
+        $vars = [
+            'type' => $request->getVar('type'),
+            'sort' => $request->getVar('sort'),
+            'dateFrom' => $request->getVar('dateFrom'),
+            'dateTo' => $request->getVar('dateTo')
+        ];
+
+
+        $params = ['term' => $request->getVar('q')];
+
+        if ($vars['type']) {
+            $params['filter']['type'] = $vars['type'];
+        }
 
         $data = [
-            'results' => $this->getResults($term)
+            'results' => $this->getResults($params)
         ];
 
 
         return $this->json($data);
     }
 
-    protected function getResults($term)
+    protected function getResults($params)
     {
         $service = new ElasticSearchService();
-        $results = $service->searchDocuments([
-            'term' => $term,
-        ]);
+        $results = $service->searchDocuments($params);
 
         $data = new ArrayList();
 
