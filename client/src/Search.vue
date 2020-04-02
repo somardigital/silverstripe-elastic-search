@@ -19,7 +19,7 @@ export default {
   data() {
     return {
       isLoading: false,
-      error: "This is error message",
+      error: "",
       results: [],
     }
   },
@@ -29,7 +29,8 @@ export default {
       this.isLoading = true
       this.error = ""
 
-      const url = `${window.location.href}/search${this.buildQueryString(params)}`
+      const pagePath = window.location.pathname.replace(/\/$/, "")
+      const url = `${pagePath}/search${this.buildQueryString(params)}`
 
       fetch(url, {
         headers: {
@@ -43,7 +44,6 @@ export default {
           this.results = response.results
         })
         .catch(() => {
-          //console.error(error)
           this.error = "An unexpected error ocurred, please refresh the page and try again"
         })
         .finally(() => {
@@ -69,6 +69,7 @@ export default {
       if (params.dateTo) {
         query += `&dateTo=${params.dateTo}`
       }
+
       return query
     },
   },
