@@ -15,6 +15,7 @@ use Ramsey\Uuid\Uuid;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 
@@ -84,7 +85,7 @@ class SearchablePageExtension extends DataExtension
             'id' => $this->owner->ID,
             'title' => $this->owner->Title,
             'content' => $this->owner->getPlainContent(),
-            'url' => $this->owner->Link(),
+            'url' => str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link()),
             'type' => $this->owner->ClassName,
             'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),
