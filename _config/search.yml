@@ -19,7 +19,7 @@ Somar\Search\ElasticSearchService:
     type:
       type: keyword
       store: true
-    created:
+    last_edited:
       type: date
       store: true
     last_indexed:

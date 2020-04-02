@@ -2,6 +2,7 @@
 
 namespace Somar\Search\Extension;
 
+use Page;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
@@ -11,6 +12,9 @@ use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\Core\Convert;
 
 use Ramsey\Uuid\Uuid;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\Queries\SQLUpdate;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 
@@ -44,20 +48,22 @@ class SearchablePageExtension extends DataExtension
      *
      * @return void
      */
-    public function putDocument()
+    public function updateSearchIndex()
     {
-        $searchData = $this->owner->searchData();
-
-        if ($searchData) {
+        if ($searchData = $this->owner->searchData()) {
             try {
                 $service = new ElasticSearchService();
                 $service->putDocument($searchData);
+
+                // Update LastIndexed timestamp
+                $table = DataObject::getSchema()->tableName(Page::class);
+
+                SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+                SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
             } catch (\Exception $e) {
                 $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
             }
         }
-
-        $this->owner->LastIndexed = DBDatetime::now()->Rfc2822();
     }
 
     /**
@@ -80,8 +86,8 @@ class SearchablePageExtension extends DataExtension
             'content' => $this->owner->getPlainContent(),
             'url' => $this->owner->Link(),
             'type' => $this->owner->ClassName,
-            'created' => date(\DateTime::ISO8601, strtotime($this->owner->Created)),
-            'last_indexed' => date(\DateTime::ISO8601, strtotime($this->owner->LastIndexed)),
+            'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
+            'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),
         ];
     }
 
@@ -114,9 +120,9 @@ class SearchablePageExtension extends DataExtension
     /**
      * Re-index this page's content if any top-level fields on the Page have changed
      */
-    public function onBeforePublish()
+    public function onAfterPublish()
     {
-        $this->putDocument();
+        $this->updateSearchIndex();
     }
 
     /**
@@ -141,5 +147,22 @@ class SearchablePageExtension extends DataExtension
     private function logger()
     {
         return Injector::inst()->get(SearchLogger::class);
+    }
+
+    /**
+     * Updates LastEdited to current timestamp using SQLUpdate
+     *
+     * @return void
+     */
+    public function updateLastEdited()
+    {
+        $this->owner->LastEdit = DBDatetime::now()->Rfc2822();
+        $table = DataObject::getSchema()->tableName(SiteTree::class);
+
+        $data = ['LastEdited' => $this->owner->LastEdit];
+        $where = ['ID' => $this->owner->ID];
+
+        SQLUpdate::create($table, $data, $where)->execute();
+        SQLUpdate::create("${table}_Live", $data, $where)->execute();
     }
 }

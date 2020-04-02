@@ -2,7 +2,6 @@
 
 namespace Somar\Search\Extension;
 
-use GWRC\Website\PageType\HomePage;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Versioned\Versioned;
@@ -17,27 +16,37 @@ class SearchableElementExtension extends DataExtension
      *
      * @return void
      */
-    public function onBeforeWrite()
+    public function onAfterWrite()
     {
         $element = $this->owner;
         // Workaround to detect if this Element has changes that need published
         if (
-            !$element->IsNotSearchable &&
-            !$element->isLiveVersion() &&
-            $element->isModifiedOnDraft() &&
-            $parentPage = $this->getParentPage()
+            Versioned::get_stage() == Versioned::LIVE
+            && !$element->IsNotSearchable
+            && $parentPage = $this->getParentPage()
         ) {
-            $parentPage->putDocument();
+            // Update last edited before indexing
+            $parentPage->updateLastEdited();
+            $parentPage->updateSearchIndex();
+        }
+    }
+
+    public function onAfterDelete()
+    {
+        if (!$this->owner->IsNotSearchable && $parentPage = $this->getParentPage()) {
+            // Update last edited before indexing
+            $parentPage->updateLastEdited();
+            $parentPage->updateSearchIndex();
         }
     }
 
     /**
-     * TODO: use onBeforePublish to trigger re-index when the below bug is fixed.
+     * TODO: use onAfterPublish to trigger re-index when the below bug is fixed.
      * BUG: This hook is never called. https://github.com/dnadesign/silverstripe-elemental/issues/779
      *
      * @return void
      */
-    public function onBeforePublish()
+    public function onAfterPublish()
     {
     }
 
