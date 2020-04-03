@@ -159,29 +159,66 @@ class ElasticSearchService
         ]);
     }
 
-    public function searchDocuments(array $query)
+    public function searchDocuments(array $params)
     {
-        return $this->client->search([
-            'index' => $this->index,
-            'explain' => isset($query['explain']) ? $query['explain'] : false,
-            'body' => [
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            'multi_match' => [
-                                'query' => $query['term'],
-                                'type' => 'most_fields',
-                                'fuzziness' => 'AUTO:3,6',
-                                'fields' => [
-                                    'title',
-                                    'content',
-                                    'code',
-                                ],
+        $body = [];
+
+        if (!empty($params['term'])) {
+            $body['query'] =        [
+                'bool' => [
+                    'must' => [
+                        'multi_match' => [
+                            'query' => $params['term'],
+                            'type' => 'most_fields',
+                            'fuzziness' => 'AUTO:3,6',
+                            'fields' => [
+                                'title',
+                                'content',
+                                'code',
                             ],
                         ],
                     ],
+
                 ],
-            ],
+            ];
+        }
+
+        if (!empty($params['filter'])) {
+            foreach ($params['filter'] as $field => $value) {
+                if (!empty($value)) {
+                    if (strpos($field, ':not') === false) {
+                        $body['query']['bool']['filter'][] = ['terms' => [$field => $value]];
+                    } else {
+                        $body['query']['bool']['must_not'][] = ['terms' => [rtrim($field, ':not') => $value]];
+                    }
+                }
+            }
+        }
+
+        if (!empty($params['sort'])) {
+            foreach ($params['sort'] as $field => $direction) {
+                $body['sort'][] = [$field => ['order' => $direction]];
+            }
+        }
+
+        if (!empty($params['range'])) {
+            foreach ($params['range'] as $field => $values) {
+                $range = [];
+                if (!empty($values['from'])) {
+                    $range['range'][$field]['gte'] = $values['from'];
+                }
+                if (!empty($values['to'])) {
+                    $range['range'][$field]['lte'] = $values['to'];
+                }
+
+                $body['query']['bool']['filter'][] = $range;
+            }
+        }
+
+        return $this->client->search([
+            'index' => $this->index,
+            'explain' => isset($params['explain']) ? $params['explain'] : false,
+            'body' => $body
         ]);
     }
 }

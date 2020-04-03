@@ -2,9 +2,10 @@
 
 namespace Somar\Search\Control;
 
+use GWRC\Website\PageType\Event;
+use GWRC\Website\PageType\NewsArticle;
+use Page;
 use PageController;
-use SilverStripe\Control\Controller;
-use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Environment;
@@ -22,25 +23,12 @@ class SearchPageController extends PageController
     ];
 
     /**
-     * @param null $action
-     *
-     * @return string
-     */
-    public function Link($action = null)
-    {
-        return Controller::join_links(
-            Director::baseURL(),
-            'search',
-            $action
-        );
-    }
-
-    /**
      * @return \SilverStripe\ORM\FieldType\DBHTMLText
      */
     public function index(HTTPRequest $request)
     {
         if (!Environment::getEnv('SS_SEARCH_HOT_RELOAD_URL')) {
+            Requirements::css('somardesignstudios/silverstripe-elastic-search: client/dist/css/app.css');
             Requirements::javascript('somardesignstudios/silverstripe-elastic-search: client/dist/js/app.js');
             Requirements::javascript('somardesignstudios/silverstripe-elastic-search: client/dist/js/chunk-vendors.js');
         } else {
@@ -58,19 +46,15 @@ class SearchPageController extends PageController
 
     public function search(HTTPRequest $request)
     {
-        $vars = [
+        $requestParams = [
+            'term' => $request->getVar('q'),
             'type' => $request->getVar('type'),
             'sort' => $request->getVar('sort'),
             'dateFrom' => $request->getVar('dateFrom'),
             'dateTo' => $request->getVar('dateTo')
         ];
 
-
-        $params = ['term' => $request->getVar('q')];
-
-        if ($vars['type']) {
-            $params['filter']['type'] = $vars['type'];
-        }
+        $params = $this->buildSearchParams($requestParams);
 
         $data = [
             'results' => $this->getResults($params)
@@ -103,13 +87,88 @@ class SearchPageController extends PageController
                 'summary' => $summary,
                 'url' => $resultData['url'],
                 'type' => $type,
-                'lastEdited' => $resultData['last_indexed']
+                'lastEdited' => $resultData['last_edited'],
+                'class' => $resultData['type']
             ]));
         }
 
         return $data->toNestedArray();
     }
 
+
+    /**
+     * Builds parameters for ElasticSearchService based on search request parameters
+     *
+     * @param array $vars
+     * @return array
+     */
+    protected function buildSearchParams($requestParams)
+    {
+        $params = [];
+
+        if (!empty($requestParams['term'])) {
+            $params['term'] = $requestParams['term'];
+        }
+
+        if ($requestParams['type']) {
+            $typeConfig = $this->TypeFilterConfig;
+
+            $params['filter']['type'] = [];
+            $params['filter']['type:not'] = [];
+
+            foreach ($requestParams['type'] as $type) {
+
+                if (!empty($typeConfig[$type]['type'])) {
+                    $params['filter']['type'] = [...$params['filter']['type'], ...$typeConfig[$type]['type']];
+                }
+
+                if (!empty($typeConfig[$type]['type:not'])) {
+                    $params['filter']['type:not'] = [...$params['filter']['type:not'], ...$typeConfig[$type]['type:not']];
+                }
+            }
+        }
+
+        if ($requestParams['sort']) {
+            $params['sort']['last_edited'] = $requestParams['sort'];
+        }
+
+        if ($requestParams['dateFrom']) {
+            $params['range']['last_edited']['from'] = $requestParams['dateFrom'];
+        }
+
+        if ($requestParams['dateTo']) {
+            $params['range']['last_edited']['to'] = $requestParams['dateTo'];
+        }
+
+        return $params;
+    }
+
+    /**
+     * Type filters configuration
+     *
+     * @return array
+     */
+    protected function getTypeFilterConfig()
+    {
+        return [
+            'news' => [
+                'type' => [NewsArticle::class],
+            ],
+            'events' => [
+                'type' => [Event::class],
+            ],
+            'content' => [
+                'type:not' => [NewsArticle::class, Event::class],
+            ],
+            'documents' => [],
+        ];
+    }
+
+    /**
+     * Search configuration
+     *
+     * @return string JSON encoded configuration object
+     */
     protected function getSearchConfig()
     {
         return json_encode([
