@@ -4,6 +4,7 @@ namespace Somar\Search\Control;
 
 use GWRC\Website\PageType\Event;
 use GWRC\Website\PageType\NewsArticle;
+use GWRC\Website\PageType\ParkPage;
 use Page;
 use PageController;
 use SilverStripe\Control\HTTPRequest;
@@ -71,12 +72,20 @@ class SearchPageController extends PageController
 
         $data = new ArrayList();
 
+        $types = [
+            Event::class => 'event',
+            NewsArticle::class => 'news',
+            ParkPage::class => 'park'
+        ];
+
         foreach ($results['hits']['hits'] as $result) {
             $resultData = $result['_source'];
+            $type = !empty($types[$resultData['type']]) ? $types[$resultData['type']] : 'page';
 
             switch ($resultData['type']) {
+
+
                 default:
-                    $type = 'page';
                     $summary = DBText::create()
                         ->setValue(str_replace(["\n", "\t"], '', $resultData['content']))
                         ->Summary(80);
