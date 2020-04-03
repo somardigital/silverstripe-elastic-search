@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { searchConfig, debounce } from "@/utils"
+import { searchConfig, debounce, buildSearchQueryString } from "@/utils"
 import Multiselect from "vue-multiselect"
 
 export default {
@@ -73,21 +73,35 @@ export default {
     resultsCount: Number,
     loadingResults: Boolean,
   },
+
   components: {
     Multiselect,
   },
+
   data() {
     return {
       keyword: "",
       searchedKeyword: "",
       typeFilter: [],
-      dateFilter: "",
+      dateFilter: null,
       dateFrom: null,
       dateTo: null,
       config: searchConfig,
     }
   },
-  computed: {},
+
+  computed: {
+    searchParams: function() {
+      return {
+        keyword: this.keyword,
+        type: this.typeFilter.map(filter => filter.value),
+        sort: this.dateFilter && ["asc", "desc"].includes(this.dateFilter.value) ? this.dateFilter.value : "",
+        dateFrom: this.dateFrom,
+        dateTo: this.dateTo,
+      }
+    },
+  },
+
   watch: {
     loadingResults: function(isLoading) {
       if (!isLoading) {
@@ -95,14 +109,27 @@ export default {
       }
     },
   },
+
   created() {
-    let uri = window.location.search.substring(1)
-    let params = new URLSearchParams(uri)
+    const uri = window.location.search.substring(1)
+    const params = new URLSearchParams(uri)
 
     this.searchedKeyword = this.keyword = params.get("q")
 
+    const filtersConfig = this.config.filters
+
+    this.typeFilter = filtersConfig.type.options.filter(option => params.getAll("type[]").includes(option.value))
+    this.dateFilter = filtersConfig.date.options.find(option => params.get("sort") == option.value)
+
+    if (params.get("dateFrom") || params.get("dateTo")) {
+      this.dateFilter = filtersConfig.date.options.find(option => "range" == option.value)
+      this.dateFrom = params.get("dateFrom")
+      this.dateTo = params.get("dateTo")
+    }
+
     this.search()
   },
+
   methods: {
     onKeywordChange() {
       this.debouncedSearch()
@@ -111,8 +138,7 @@ export default {
       this.search()
     },
     onDateFilterChange() {
-      this.dateFrom = null
-      this.dateTo = null
+      this.dateFrom = this.dateTo = null
 
       if (this.dateFilter && this.dateFilter.value != "range") {
         this.search()
@@ -128,13 +154,10 @@ export default {
         return
       }
 
-      this.$emit("search", {
-        keyword: this.keyword,
-        type: this.typeFilter.map(filter => filter.value),
-        sort: this.dateFilter && ["asc", "desc"].includes(this.dateFilter.value) ? this.dateFilter.value : "",
-        dateFrom: this.dateFrom,
-        dateTo: this.dateTo,
-      })
+      const pagePath = window.location.pathname.replace(/\/$/, "")
+      window.history.pushState({}, "", `${pagePath}/${buildSearchQueryString(this.searchParams)}`)
+
+      this.$emit("search", this.searchParams)
     },
   },
 }

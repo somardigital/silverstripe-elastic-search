@@ -5,6 +5,7 @@
         <a :href="result.url">
           <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
         </a>
+        <dir>{{ result.class }}</dir>
         <p class="search-results__summary">{{ result.summary }}</p>
         <a :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
         <div class="search-results__meta">
