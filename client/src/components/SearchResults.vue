@@ -96,6 +96,7 @@ export default {
   list-style-type: none;
   margin-bottom: 0;
   margin-top: 20px;
+  padding: 0;
   li {
     display: inline-block;
   }

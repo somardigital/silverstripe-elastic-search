@@ -2,7 +2,7 @@
   <div id="search-app">
     <SearchHeader :resultsCount="results.length" :loadingResults="isLoading" @search="onSearch" />
     <SearchResults v-if="!isLoading" :results="results" :errorMessage="error" />
-    <div v-else class="search-loader">Loading...</div>
+    <div v-else class="search__loader"><span class="sr-only">Loading...</span></div>
   </div>
 </template>
 

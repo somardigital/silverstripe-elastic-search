@@ -87,8 +87,7 @@ class SearchPageController extends PageController
                 'summary' => $summary,
                 'url' => $resultData['url'],
                 'type' => $type,
-                'lastEdited' => $resultData['last_edited'],
-                'class' => $resultData['type']
+                'lastEdited' => $resultData['last_edited']
             ]));
         }
 
@@ -160,7 +159,7 @@ class SearchPageController extends PageController
             'content' => [
                 'type:not' => [NewsArticle::class, Event::class],
             ],
-            'documents' => [],
+            'documents' => [ /* TODO: add once document library is implemented*/],
         ];
     }
 
