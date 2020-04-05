@@ -133,8 +133,10 @@ class ElasticSearchService
     {
         $body = [];
         foreach ($documents as $doc) {
-            $body[] = ['index' => ['_index' => $this->index]];
-            $body[] = $doc;
+            $body[] = [
+                'index' => ['_index' => $this->index, '_id' => $doc['id']]
+            ];
+            $body[] = $doc['searchData'];
         }
 
         return $this->client->bulk([
@@ -142,11 +144,11 @@ class ElasticSearchService
             'body' => $body,
         ]);
     }
-    public function putDocument($document)
+    public function putDocument($id, $document)
     {
         return $this->client->index([
             'index' => $this->index,
-            'id' => $document['guid'],
+            'id' => $id,
             'body' => $document,
         ]);
     }

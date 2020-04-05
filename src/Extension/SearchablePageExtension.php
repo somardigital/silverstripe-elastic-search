@@ -13,9 +13,9 @@ use SilverStripe\Core\Convert;
 
 use Ramsey\Uuid\Uuid;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
-use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 
@@ -27,6 +27,7 @@ class SearchablePageExtension extends DataExtension
     private static $db = [
         "LastIndexed" => "Datetime",
         'GUID' => 'Varchar(40)',
+        'Keywords' => 'Varchar(255)'
     ];
 
     public function updateCMSFields(FieldList $fields)
@@ -34,6 +35,13 @@ class SearchablePageExtension extends DataExtension
         $fields->removeByName([
             'GUID',
         ]);
+
+        $fields->addFieldToTab(
+            'Root.Main',
+            TextField::create('Keywords')
+                ->setRightTitle('Use this field to affect the site search results'),
+            'MetaDescription'
+        );
     }
 
     public function updateSettingsFields(FieldList $fields)
@@ -51,10 +59,10 @@ class SearchablePageExtension extends DataExtension
      */
     public function updateSearchIndex()
     {
-        if ($searchData = $this->owner->searchData()) {
+        if ($this->owner->isIndexed() && $searchData = $this->owner->searchData()) {
             try {
                 $service = new ElasticSearchService();
-                $service->putDocument($searchData);
+                $service->putDocument($this->owner->GUID, $searchData);
 
                 // Update LastIndexed timestamp
                 $table = DataObject::getSchema()->tableName(Page::class);
@@ -62,7 +70,7 @@ class SearchablePageExtension extends DataExtension
                 SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
                 SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
             } catch (\Exception $e) {
-                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
             }
         }
     }
@@ -81,10 +89,10 @@ class SearchablePageExtension extends DataExtension
         }
 
         return [
-            'guid' => $this->owner->GUID,
-            'id' => $this->owner->ID,
+            'page_id' => $this->owner->ID,
             'title' => $this->owner->Title,
             'content' => $this->owner->getPlainContent(),
+            'keywords' => $this->owner->Keywords,
             'url' => str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link()),
             'type' => $this->owner->ClassName,
             'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
@@ -165,5 +173,10 @@ class SearchablePageExtension extends DataExtension
 
         SQLUpdate::create($table, $data, $where)->execute();
         SQLUpdate::create("${table}_Live", $data, $where)->execute();
+    }
+
+    public function isIndexed()
+    {
+        return !($this->owner->config()->get('disable_indexing') || $this->owner->DisableIndexing);
     }
 }

@@ -3,25 +3,20 @@ Name: somar_search
 ---
 Somar\Search\ElasticSearchService:
   mappingProperties:
-    id:
+    page_id:
       type: text
-      store: true
+      index: false
     title:
       type: text
-      analyzer: standard
     content:
       type: text
-      analyzer: standard
-      store: true
+    keywords:
+      type: text
     url:
       type: text
-      store: true
     type:
       type: keyword
-      store: true
-    last_edited:
+    created:
       type: date
-      store: true
     last_indexed:
       type: date
-      store: true

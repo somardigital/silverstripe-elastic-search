@@ -2,6 +2,7 @@
 
 namespace Somar\Search\Job;
 
+use Exception;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use Page;
@@ -60,25 +61,38 @@ class SearchIndexJob extends AbstractQueuedJob
 
         if ($pages->count()) {
             foreach ($pages as $page) {
+                if (!$page->isIndexed()) {
+                    continue;
+                }
+
                 $searchData = $page->searchData();
+
+
                 if ($searchData) {
-                    $documents[] = $searchData;
+                    $documents[] = ['id' => $page->GUID, 'searchData' => $searchData];
                 }
             }
         }
 
         if (!empty($documents)) {
             try {
-                $service->putDocuments($documents);
+                $result = $service->putDocuments($documents);
+
+                if ($result['errors']) {
+                    $error = $result['items'][0]['index']['error'];
+                    throw new Exception(implode(': ', $error));
+                }
+
+                $this->messages[] = sprintf(
+                    'Indexed %s pages',
+                    count($documents)
+                );
             } catch (\Exception $e) {
                 $this->messages[] = 'Exception: ' . $e->getMessage();
                 throw $e;
             }
-
-            $this->messages[] = sprintf(
-                'Indexed %s pages',
-                count($documents)
-            );
+        } else {
+            $this->messages[] = "No documents to index";
         }
     }
 
