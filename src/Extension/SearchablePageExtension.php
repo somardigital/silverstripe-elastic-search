@@ -25,7 +25,7 @@ use Somar\Search\Log\SearchLogger;
 class SearchablePageExtension extends DataExtension
 {
     private static $db = [
-        "LastIndexed" => "Datetime",
+        'LastIndexed' => 'Datetime',
         'GUID' => 'Varchar(40)',
         'Keywords' => 'Varchar(255)'
     ];
@@ -33,15 +33,17 @@ class SearchablePageExtension extends DataExtension
     public function updateCMSFields(FieldList $fields)
     {
         $fields->removeByName([
-            'GUID',
+            'GUID'
         ]);
 
-        $fields->addFieldToTab(
-            'Root.Main',
-            TextField::create('Keywords')
-                ->setRightTitle('Use this field to affect the site search results'),
-            'MetaDescription'
-        );
+        if ($this->isIndexed()) {
+            $fields->addFieldToTab(
+                'Root.Main',
+                TextField::create('Keywords')
+                    ->setRightTitle('Use this field to affect the site search results'),
+                'MetaDescription'
+            );
+        }
     }
 
     public function updateSettingsFields(FieldList $fields)
