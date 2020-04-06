@@ -47,15 +47,7 @@ class SearchPageController extends PageController
 
     public function search(HTTPRequest $request)
     {
-        $requestParams = [
-            'term' => $request->getVar('q'),
-            'type' => $request->getVar('type'),
-            'sort' => $request->getVar('sort'),
-            'dateFrom' => $request->getVar('dateFrom'),
-            'dateTo' => $request->getVar('dateTo')
-        ];
-
-        $params = $this->buildSearchParams($requestParams);
+        $params = $this->buildSearchParams($request);
 
         $data = [
             'results' => $this->getResults($params)
@@ -107,11 +99,19 @@ class SearchPageController extends PageController
     /**
      * Builds parameters for ElasticSearchService based on search request parameters
      *
-     * @param array $vars
+     * @param HTTPRequest $request
      * @return array
      */
-    protected function buildSearchParams($requestParams)
+    protected function buildSearchParams(HTTPRequest $request)
     {
+        $requestParams = [
+            'term' => $request->getVar('q'),
+            'type' => $request->getVar('type'),
+            'sort' => $request->getVar('sort'),
+            'dateFrom' => $request->getVar('dateFrom'),
+            'dateTo' => $request->getVar('dateTo')
+        ];
+
         $params = [];
 
         if (!empty($requestParams['term'])) {
@@ -147,6 +147,8 @@ class SearchPageController extends PageController
         if ($requestParams['dateTo']) {
             $params['range']['last_edited']['to'] = $requestParams['dateTo'];
         }
+
+        $this->extend('updateSearchParams', $params, $request);
 
         return $params;
     }

@@ -5,10 +5,12 @@ namespace Somar\Search;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Elasticsearch\ClientBuilder;
+use SilverStripe\Core\Extensible;
 
 class ElasticSearchService
 {
     use Configurable;
+    use Extensible;
 
     /**
      * @config
@@ -24,34 +26,13 @@ class ElasticSearchService
      *   mappingProperties:
      *     custom_field_one:
      *       type: text
-     *       store: true
      *     custom_field_two:
      *       type: date
-     *       store: true
      *
+     * To update the search query you can use updateSearchRequestBody hook
      *
-     * The resulting php array would be of the form:
-     *
-     * $mappingProperties = [
-     *     'id' => [
-     *         'type' => 'text',
-     *         'store' => true,
-     *     ],
-     *     'type' => [
-     *         'type' => 'keyword',
-     *         'store' => true,
-     *     ],
-     *     'title' => [
-     *         'type' => 'text',
-     *         'analyzer' => 'standard',
-     *     ],
-     *     'content' => [
-     *         'type' => 'text',
-     *         'analyzer' => 'standard',
-     *         'store' => true,
-     *     ]
-     * ];
      */
+
     private static $mappingProperties = [];
 
     private $client;
@@ -216,6 +197,8 @@ class ElasticSearchService
                 $body['query']['bool']['filter'][] = $range;
             }
         }
+
+        $this->extend('updateSearchRequestBody', $body);
 
         return $this->client->search([
             'index' => $this->index,

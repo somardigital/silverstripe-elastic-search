@@ -65,11 +65,11 @@ class SearchIndexJob extends AbstractQueuedJob
                     continue;
                 }
 
-                $searchData = $page->searchData();
-
-
-                if ($searchData) {
-                    $documents[] = ['id' => $page->GUID, 'searchData' => $searchData];
+                if ($searchData = $page->searchData()) {
+                    $documents[] = [
+                        'id' => $page->GUID,
+                        'searchData' => $searchData
+                    ];
                 }
             }
         }
