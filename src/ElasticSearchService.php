@@ -155,9 +155,9 @@ class ElasticSearchService
                             'type' => 'most_fields',
                             'fuzziness' => 'AUTO:3,6',
                             'fields' => [
-                                'title',
+                                'title^2',
+                                'keywords^2.5',
                                 'content',
-                                'code',
                             ],
                         ],
                     ],
