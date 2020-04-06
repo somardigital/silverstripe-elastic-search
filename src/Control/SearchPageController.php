@@ -2,10 +2,6 @@
 
 namespace Somar\Search\Control;
 
-use GWRC\Website\PageType\Event;
-use GWRC\Website\PageType\NewsArticle;
-use GWRC\Website\PageType\ParkPage;
-use Page;
 use PageController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -15,6 +11,9 @@ use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\Requirements;
 use Somar\Search\ElasticSearchService;
+use GWRC\Website\PageType\Event;
+use GWRC\Website\PageType\NewsArticle;
+use GWRC\Website\PageType\ParkPage;
 
 class SearchPageController extends PageController
 {

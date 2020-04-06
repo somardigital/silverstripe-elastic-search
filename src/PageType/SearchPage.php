@@ -1,6 +1,6 @@
 <?php
 
-namespace GWRC\Website;
+namespace Somar\Search\PageType;
 
 use Page;
 use Somar\Search\Control\SearchPageController;
