@@ -100,6 +100,9 @@ export default {
         dateTo: this.dateTo,
       }
     },
+    url: function() {
+      return window.href
+    },
   },
 
   watch: {
@@ -111,32 +114,44 @@ export default {
   },
 
   created() {
-    const uri = window.location.search.substring(1)
-    const params = new URLSearchParams(uri)
-
-    this.searchedKeyword = this.keyword = params.get("q")
-
-    const filtersConfig = this.config.filters
-
-    this.typeFilter = filtersConfig.type.options.filter(option => params.getAll("type[]").includes(option.value))
-    this.dateFilter = filtersConfig.date.options.find(option => params.get("sort") == option.value)
-
-    if (params.get("dateFrom") || params.get("dateTo")) {
-      this.dateFilter = filtersConfig.date.options.find(option => "range" == option.value)
-      this.dateFrom = params.get("dateFrom")
-      this.dateTo = params.get("dateTo")
-    }
-
+    this.initFilters()
     this.search()
+
+    // update search on back/forward button
+    const _this = this
+    window.onpopstate = function() {
+      _this.initFilters()
+      _this.search(false)
+    }
   },
 
   methods: {
+    initFilters() {
+      const uri = window.location.search.substring(1)
+      const params = new URLSearchParams(uri)
+
+      this.searchedKeyword = this.keyword = params.get("q")
+
+      const filtersConfig = this.config.filters
+
+      this.typeFilter = filtersConfig.type.options.filter(option => params.getAll("type[]").includes(option.value))
+      this.dateFilter = filtersConfig.date.options.find(option => params.get("sort") == option.value)
+
+      if (params.get("dateFrom") || params.get("dateTo")) {
+        this.dateFilter = filtersConfig.date.options.find(option => "range" == option.value)
+        this.dateFrom = params.get("dateFrom")
+        this.dateTo = params.get("dateTo")
+      }
+    },
+
     onKeywordChange() {
       this.debouncedSearch()
     },
+
     onTypeFilterChange() {
       this.search()
     },
+
     onDateFilterChange() {
       this.dateFrom = this.dateTo = null
 
@@ -149,13 +164,15 @@ export default {
       this.search()
     }, 500),
 
-    search() {
+    search(updateURL = true) {
       if (!this.keyword) {
         return
       }
 
-      const pagePath = window.location.pathname.replace(/\/$/, "")
-      window.history.pushState({}, "", `${pagePath}/${buildSearchQueryString(this.searchParams)}`)
+      if (updateURL) {
+        const pagePath = window.location.pathname.replace(/\/$/, "")
+        window.history.pushState({}, "", `${pagePath}/${buildSearchQueryString(this.searchParams)}`)
+      }
 
       this.$emit("search", this.searchParams)
     },
