@@ -191,10 +191,10 @@ export default {
     position: relative;
 
     .material-icons {
-      font-size: 36px;
+      font-size: 32px;
       position: absolute;
       right: 8px;
-      top: calc(50% - 18px);
+      top: calc(50% - 16px);
     }
   }
 
