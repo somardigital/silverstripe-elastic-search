@@ -2,6 +2,7 @@
 
 namespace Somar\Search\Control;
 
+use GWRC\Website\Model\DocumentLibrary\Document;
 use PageController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
@@ -111,6 +112,11 @@ class SearchPageController extends PageController
             'dateTo' => $request->getVar('dateTo')
         ];
 
+        // overwrite with predefined search type
+        if ($this->SearchType) {
+            $requestParams['type'] = [$this->SearchType];
+        }
+
         $params = [];
 
         if (!empty($requestParams['term'])) {
@@ -167,9 +173,11 @@ class SearchPageController extends PageController
                 'type' => [Event::class],
             ],
             'content' => [
-                'type:not' => [NewsArticle::class, Event::class],
+                'type:not' => [NewsArticle::class, Event::class, Document::class],
             ],
-            'documents' => [ /* TODO: add once document library is implemented*/],
+            'documents' => [
+                'type' => [Document::class]
+            ],
         ];
     }
 
