@@ -1,7 +1,7 @@
 <template>
   <div class="search__header">
     <h2 v-if="searchedKeyword">{{ resultsCount }} results found for ‘{{ searchedKeyword }}’</h2>
-    <h2 v-else>Start typing to search the content</h2>
+    <h2 v-else>{{ config.labels.title }}</h2>
     <div class="search__keyword">
       <input type="search" class="search__input" v-model="keyword" @input="onKeywordChange" />
       <i class="material-icons text-primary">search</i>
@@ -10,17 +10,17 @@
     <div class="search__filters">
       <h3 class="search__hint">{{ config.labels.filtersHint }}</h3>
       <div class="row">
-        <div class="col-md-6">
+        <div v-for="filterConfig in config.filters" class="col-md-6" :key="filterConfig.name">
           <multiselect
             class="multiselect--multiple"
-            v-model="typeFilter"
+            v-model="filters[filterConfig.name]"
             track-by="value"
             label="name"
-            :placeholder="config.filters.type.placeholder"
-            :options="config.filters.type.options"
+            :placeholder="filterConfig.placeholder"
+            :options="filterConfig.options"
             :multiple="true"
             :searchable="false"
-            @input="onTypeFilterChange"
+            @input="onFilterChange"
           >
             <template slot="tag" slot-scope="{ option, remove }">
               <span class="multiselect__tag">
@@ -32,13 +32,13 @@
             </template>
           </multiselect>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" v-if="config.date">
           <multiselect
             v-model="dateFilter"
             track-by="value"
             label="name"
             placeholder="By date"
-            :options="config.filters.date.options"
+            :options="config.date.options"
             :searchable="false"
             @input="onDateFilterChange"
           >
@@ -82,7 +82,7 @@ export default {
     return {
       keyword: "",
       searchedKeyword: "",
-      typeFilter: [],
+      filters: {},
       dateFilter: null,
       dateFrom: null,
       dateTo: null,
@@ -92,12 +92,19 @@ export default {
 
   computed: {
     searchParams: function() {
+      const filters = {}
+      this.config.filters.forEach(filter => {
+        if (this.filters[filter.name]) {
+          filters[filter.name] = this.filters[filter.name].map(option => option.value)
+        }
+      })
+
       return {
-        keyword: this.keyword,
-        type: this.typeFilter.map(filter => filter.value),
+        q: this.keyword,
         sort: this.dateFilter && ["asc", "desc"].includes(this.dateFilter.value) ? this.dateFilter.value : "",
         dateFrom: this.dateFrom,
         dateTo: this.dateTo,
+        ...filters,
       }
     },
     url: function() {
@@ -112,6 +119,8 @@ export default {
       }
     },
   },
+
+  mounted() {},
 
   created() {
     this.initFilters()
@@ -132,15 +141,22 @@ export default {
 
       this.searchedKeyword = this.keyword = params.get("q")
 
-      const filtersConfig = this.config.filters
+      const activeFilters = {}
+      this.config.filters.forEach(filter => {
+        activeFilters[filter.name] = filter.options.filter(option => {
+          return params.getAll(`${filter.name}[]`).includes(option.value)
+        })
+      })
+      this.filters = activeFilters
 
-      this.typeFilter = filtersConfig.type.options.filter(option => params.getAll("type[]").includes(option.value))
-      this.dateFilter = filtersConfig.date.options.find(option => params.get("sort") == option.value)
+      if (this.config.date) {
+        this.dateFilter = this.config.date.options.find(option => params.get("sort") == option.value)
 
-      if (params.get("dateFrom") || params.get("dateTo")) {
-        this.dateFilter = filtersConfig.date.options.find(option => "range" == option.value)
-        this.dateFrom = params.get("dateFrom")
-        this.dateTo = params.get("dateTo")
+        if (params.get("dateFrom") || params.get("dateTo")) {
+          this.dateFilter = this.config.date.options.find(option => "range" == option.value)
+          this.dateFrom = params.get("dateFrom")
+          this.dateTo = params.get("dateTo")
+        }
       }
     },
 
@@ -148,7 +164,7 @@ export default {
       this.debouncedSearch()
     },
 
-    onTypeFilterChange() {
+    onFilterChange() {
       this.search()
     },
 

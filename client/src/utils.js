@@ -55,30 +55,19 @@ export const debounce = (fn, time) => {
 }
 
 export const buildSearchQueryString = params => {
-  const encodedParams = { ...params }
-  Object.keys(encodedParams).forEach(param => {
-    encodedParams[param] = Array.isArray(encodedParams[param])
-      ? encodedParams[param].map(encodeURIComponent)
-      : encodeURIComponent(encodedParams[param])
+  const queryParams = []
+
+  Object.keys(params).forEach(key => {
+    if (Array.isArray(params[key])) {
+      if (params[key].length) {
+        queryParams.push(`${key}[]=${params[key].map(encodeURIComponent).join(`&${key}[]=`)}`)
+      }
+    } else {
+      if (params[key] && params[key] != "null") {
+        queryParams.push(`${key}=${encodeURIComponent(params[key])}`)
+      }
+    }
   })
 
-  let query = `?q=${encodedParams.keyword}`
-
-  if (encodedParams.type && encodedParams.type.length) {
-    query += `&type[]=${encodedParams.type.join("&type[]=")}`
-  }
-
-  if (encodedParams.sort) {
-    query += `&sort=${encodedParams.sort}`
-  }
-
-  if (encodedParams.dateFrom && encodedParams.dateFrom != "null") {
-    query += `&dateFrom=${encodedParams.dateFrom}`
-  }
-
-  if (encodedParams.dateTo && encodedParams.dateTo != "null") {
-    query += `&dateTo=${encodedParams.dateTo}`
-  }
-
-  return query
+  return `?${queryParams.join("&")}`
 }

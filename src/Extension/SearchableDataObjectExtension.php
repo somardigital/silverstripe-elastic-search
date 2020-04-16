@@ -16,13 +16,14 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
+use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 
 /**
- * Allow a Page to be indexed in Elastic.
+ * Allow a DataObject to be indexed in Elastic.
  */
-class SearchablePageExtension extends DataExtension
+class SearchableDataObjectExtension extends DataExtension
 {
     private static $db = [
         'LastIndexed' => 'Datetime',
@@ -33,14 +34,16 @@ class SearchablePageExtension extends DataExtension
     public function updateCMSFields(FieldList $fields)
     {
         $fields->removeByName([
-            'GUID'
+            'GUID', 'LastIndexed'
         ]);
 
         if ($this->isIndexed()) {
-            $fields->addFieldToTab(
+            $fields->addFieldsToTab(
                 'Root.Main',
-                TextField::create('Keywords')
-                    ->setRightTitle('Use this field to affect the site search results'),
+                [
+                    TextField::create('Keywords')
+                        ->setRightTitle('Use this field to affect the site search results')
+                ],
                 'MetaDescription'
             );
         }
@@ -48,14 +51,16 @@ class SearchablePageExtension extends DataExtension
 
     public function updateSettingsFields(FieldList $fields)
     {
-        $fields->insertAfter(
-            'Visibility',
-            DatetimeField::create('LastIndexed')->setReadonly(true)
-        );
+        if ($this->isIndexed()) {
+            $fields->insertAfter(
+                'Visibility',
+                DatetimeField::create('LastIndexed')->setReadonly(true)
+            );
+        }
     }
 
     /**
-     * Re-index this page in Elastic
+     * Re-index this DataObject in Elastic
      *
      * @return void
      */
@@ -67,31 +72,34 @@ class SearchablePageExtension extends DataExtension
                 $service->putDocument($this->owner->GUID, $searchData);
 
                 // Update LastIndexed timestamp
-                $table = DataObject::getSchema()->tableName(Page::class);
+                $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
 
                 SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
-                SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+
+                if ($this->owner->has_extension(Versioned::class)) {
+                    SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+                }
             } catch (\Exception $e) {
-                $this->logger()->error("Unable to re-index page onPublish. Index {$service->getIndexName()}, Page ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
+                $this->logger()->error("Unable to re-index object. Index {$service->getIndexName()}, ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
             }
         }
     }
 
     /**
-     * Flattened representation of Page content to push to Elastic.
+     * Flattened representation of DataObject content to push to Elastic.
      */
     public function searchData()
     {
         // cannot index a document without a GUID
-        // write this Page to generate a GUID
+        // write this DataObject to generate a GUID
         if (empty($this->owner->GUID)) {
-            $this->logger()->error("Attempted to index a page, but it had no GUID. Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+            $this->logger()->error("Attempted to index an object, but it had no GUID. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
 
             return null;
         }
 
-        return [
-            'page_id' => $this->owner->ID,
+        $searchData = [
+            'object_id' => $this->owner->ID,
             'title' => $this->owner->Title,
             'content' => $this->owner->getPlainContent(),
             'keywords' => $this->owner->Keywords,
@@ -100,6 +108,11 @@ class SearchablePageExtension extends DataExtension
             'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),
         ];
+
+        $this->owner->extend('updateSearchData', $searchData);
+
+
+        return $searchData;
     }
 
     public function getPlainContent(): string
@@ -120,24 +133,27 @@ class SearchablePageExtension extends DataExtension
      */
     public function onBeforeWrite()
     {
-        parent::onBeforeWrite();
-
         if (empty($this->owner->GUID)) {
             $uuid = Uuid::uuid4();
             $this->owner->GUID = $uuid->toString();
         }
     }
 
-    /**
-     * Re-index this page's content if any top-level fields on the Page have changed
-     */
+    public function onAfterWrite()
+    {
+        if (!$this->owner->has_extension(Versioned::class)) {
+            $this->updateSearchIndex();
+        }
+    }
+
+
     public function onAfterPublish()
     {
         $this->updateSearchIndex();
     }
 
     /**
-     * Remove this page from elastic index.
+     * Remove this object from elastic index.
      */
     public function onAfterDelete()
     {
@@ -147,8 +163,8 @@ class SearchablePageExtension extends DataExtension
             $service = new ElasticSearchService();
             $service->removeDocument($this->owner->GUID);
         } catch (\Exception $e) {
-            $this->logger()->error("Unable to remove page from elastic index {$service->getIndexName()} onDelete. Page ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. Page GUID: {$this->owner->GUID}");
+            $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
         }
     }
 
@@ -167,18 +183,20 @@ class SearchablePageExtension extends DataExtension
      */
     public function updateLastEdited()
     {
-        $this->owner->LastEdit = DBDatetime::now()->Rfc2822();
-        $table = DataObject::getSchema()->tableName(SiteTree::class);
+        $this->owner->LastEdited = DBDatetime::now()->Rfc2822();
 
-        $data = ['LastEdited' => $this->owner->LastEdit];
+        $table = DataObject::getSchema()->tableName(is_a($this->owner, SiteTree::class) ? SiteTree::class : $this->owner->ClassName);
+        $data = ['LastEdited' => $this->owner->LastEdited];
         $where = ['ID' => $this->owner->ID];
 
         SQLUpdate::create($table, $data, $where)->execute();
-        SQLUpdate::create("${table}_Live", $data, $where)->execute();
+        if ($this->owner->has_extension(Versioned::class)) {
+            SQLUpdate::create("${table}_Live", $data, $where)->execute();
+        }
     }
 
     public function isIndexed()
     {
-        return !($this->owner->config()->get('disable_indexing') || $this->owner->DisableIndexing);
+        return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing);
     }
 }

@@ -3,7 +3,7 @@ Name: somar_search_extensions
 ---
 Page:
   extensions:
-    - Somar\Search\Extension\SearchablePageExtension
+    - Somar\Search\Extension\SearchableDataObjectExtension
 DNADesign\Elemental\Models\BaseElement:
   extensions:
     - Somar\Search\Extension\SearchableElementExtension

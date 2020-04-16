@@ -15,6 +15,9 @@ use Somar\Search\ElasticSearchService;
 use GWRC\Website\PageType\Event;
 use GWRC\Website\PageType\NewsArticle;
 use GWRC\Website\PageType\ParkPage;
+use SilverStripe\Forms\Filter\SlugFilter;
+use SilverStripe\ORM\DataObject;
+use Somar\Search\PageType\SearchPage;
 
 class SearchPageController extends PageController
 {
@@ -104,81 +107,78 @@ class SearchPageController extends PageController
      */
     protected function buildSearchParams(HTTPRequest $request)
     {
-        $requestParams = [
-            'term' => $request->getVar('q'),
-            'type' => $request->getVar('type'),
-            'sort' => $request->getVar('sort'),
-            'dateFrom' => $request->getVar('dateFrom'),
-            'dateTo' => $request->getVar('dateTo')
-        ];
+        $params = [];
+        $queryParams = $request->getVars();
+
+        // keyword
+        if (!empty($queryParams['q'])) {
+            $params['term'] = $queryParams['q'];
+        }
+
+        // filters
+        $filtersConfig = SearchPage::config()->searchConfig['filters'];
 
         // overwrite with predefined search type
         if ($this->SearchType) {
-            $requestParams['type'] = [$this->SearchType];
+            $searchTypeConfig = SearchPage::config()->searchTypes[$this->SearchType];
+
+            if (!empty($searchTypeConfig['presets'])) {
+                foreach ($searchTypeConfig['presets'] as $name => $value) {
+                    $queryParams[$name] = [$value];
+                }
+            }
+
+            if (!empty($searchTypeConfig['filters'])) {
+                $filtersConfig = array_replace_recursive($filtersConfig, $searchTypeConfig['filters']);
+            }
         }
 
-        $params = [];
+        foreach ($filtersConfig as $name => $filter) {
+            if (!empty($queryParams[$name])) {
+                $field = $filter['field'];
 
-        if (!empty($requestParams['term'])) {
-            $params['term'] = $requestParams['term'];
-        }
+                $params['filter']["$field"] = [];
+                $params['filter']["$field:not"] = [];
 
-        if ($requestParams['type']) {
-            $typeConfig = $this->TypeFilterConfig;
+                foreach ($queryParams[$name] as $filteredValue) {
+                    // if there is no predefined option, it an option generated from tags
+                    $option = !empty($filter['options'][$filteredValue]) ? $filter['options'][$filteredValue] : ['filter' => $filteredValue];
 
-            $params['filter']['type'] = [];
-            $params['filter']['type:not'] = [];
-
-            foreach ($requestParams['type'] as $type) {
-
-                if (!empty($typeConfig[$type]['type'])) {
-                    $params['filter']['type'] = [...$params['filter']['type'], ...$typeConfig[$type]['type']];
+                    foreach (["", ":not"] as $type) {
+                        if (!empty($option['filter' . $type])) {
+                            // allow single or multiple values for each filter option
+                            $filterValue = is_array($option['filter' . $type]) ? $option['filter' . $type] : [$option['filter' . $type]];
+                            $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
+                        }
+                    }
                 }
 
-                if (!empty($typeConfig[$type]['type:not'])) {
-                    $params['filter']['type:not'] = [...$params['filter']['type:not'], ...$typeConfig[$type]['type:not']];
+                // to not have the same filter including and excluding at the same time
+                if (!empty($params['filter']["$field"]) && !empty($params['filter']["$field:not"])) {
+                    $params['filter']["$field:not"] = array_values(array_diff($params['filter']["$field:not"], $params['filter']["$field"]));
+                    $params['filter']["$field"] = [];
                 }
             }
         }
 
-        if ($requestParams['sort']) {
-            $params['sort']['last_edited'] = $requestParams['sort'];
+        // date filter/sort
+        $dateConfig = $filtersConfig = SearchPage::config()->searchConfig['date'];
+
+        if (!empty($queryParams['sort'])) {
+            $params['sort'][$dateConfig['field']] = $queryParams['sort'];
         }
 
-        if ($requestParams['dateFrom']) {
-            $params['range']['last_edited']['from'] = $requestParams['dateFrom'];
+        if (!empty($queryParams['dateFrom'])) {
+            $params['range'][$dateConfig['field']]['from'] = $queryParams['dateFrom'];
         }
 
-        if ($requestParams['dateTo']) {
-            $params['range']['last_edited']['to'] = $requestParams['dateTo'];
+        if (!empty($queryParams['dateTo'])) {
+            $params['range'][$dateConfig['field']]['to'] = $queryParams['dateTo'];
         }
 
         $this->extend('updateSearchParams', $params, $request);
 
         return $params;
-    }
-
-    /**
-     * Type filters configuration
-     *
-     * @return array
-     */
-    protected function getTypeFilterConfig()
-    {
-        return [
-            'news' => [
-                'type' => [NewsArticle::class],
-            ],
-            'events' => [
-                'type' => [Event::class],
-            ],
-            'content' => [
-                'type:not' => [NewsArticle::class, Event::class, Document::class],
-            ],
-            'documents' => [
-                'type' => [Document::class]
-            ],
-        ];
     }
 
     /**
@@ -188,59 +188,62 @@ class SearchPageController extends PageController
      */
     protected function getSearchConfig()
     {
+        $searchConfig = SearchPage::config()->get('searchConfig');
+
+        if ($this->SearchType) {
+            $searchTypeConfig = SearchPage::config()->searchTypes[$this->SearchType];
+            $searchConfig = array_replace_recursive($searchConfig, $searchTypeConfig);
+
+            foreach ($searchTypeConfig['presets'] as $name => $value) {
+                if (isset($searchConfig['filters'][$name])) {
+                    unset($searchConfig['filters'][$name]);
+                }
+            }
+        }
+
+        // parse yml config to structure required for frontend
+        $parseConfig = function ($filterName, $config) {
+            $options = [];
+
+            if (!empty($config['tag']) && $tags = DataObject::get($config['tag'])->toArray()) {
+                $slugFilter = SlugFilter::create();
+                $options = array_map(fn ($tag) =>
+                [
+                    'name' => $tag->Title,
+                    'value' => $slugFilter->filter($tag->Title)
+                ], $tags);
+            }
+
+            if (!empty($config['options'])) {
+                foreach ($config['options'] as $value => $option) {
+                    $options[] = [
+                        'name' => $option['name'],
+                        'value' => $value
+                    ];
+                }
+            }
+
+            return !empty($options) ? [
+                'name' => $filterName,
+                'placeholder' => $config['placeholder'],
+                'options' => $options
+            ] : null;
+        };
+
+        $filters = [];
+
+        foreach ($searchConfig['filters'] as $name => $filter) {
+            if ($filterConfig = $parseConfig($name, $filter)) {
+                $filters[] = $filterConfig;
+            }
+        }
+
+
         return json_encode([
-            'labels' => [
-                'filtersHint' => 'Refine your search results below by selecting popular filters and/or ordering them by date.',
-                'noResultsMessage'
-            ],
-            'filters' => [
-
-                'type' => [
-                    'placeholder' => 'Type of content',
-                    'options' => [
-                        [
-                            'name' => 'News',
-                            'value' => 'news',
-                        ],
-                        [
-                            'name' => 'Events',
-                            'value' => 'events',
-                        ],
-                        [
-                            'name' => 'Content',
-                            'value' => 'content',
-                        ],
-
-                        [
-                            'name' => 'Documents',
-                            'value' => 'documents',
-                        ],
-                        [
-                            'name' => 'I want to...',
-                            'value' => 'activities',
-                        ]
-                    ]
-                ],
-
-                'date' => [
-                    'placeholder' => 'Type of content',
-                    'options' => [
-                        [
-                            'name' => 'Most recent first',
-                            'value' => 'desc',
-                        ],
-                        [
-                            'name' => 'Oldest first',
-                            'value' => 'asc',
-                        ],
-                        [
-                            'name' => 'Select dates',
-                            'value' => 'range',
-                        ]
-                    ]
-                ]
-            ]
-
+            'labels' => $searchConfig['labels'],
+            'filters' => $filters,
+            'date' => $parseConfig('date', $searchConfig['date']),
+            // 'searchTypes' => SearchPage::config()->get('searchTypes')
         ]);
     }
 

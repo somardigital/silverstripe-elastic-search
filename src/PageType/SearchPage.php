@@ -24,9 +24,10 @@ class SearchPage extends Page
     public function getCMSFields()
     {
         $this->beforeUpdateCMSFields(function (FieldList $fields) {
-            $searchTypes = $this->config()->get('search_types');
+            $searchTypesConfig = $this->config()->get('searchTypes');
 
-            if (!empty($searchTypes)) {
+            if (!empty($searchTypesConfig)) {
+                $searchTypes = array_map(fn ($type) => $type['name'], $searchTypesConfig);
                 $fields->addFieldToTab(
                     'Root.Main',
                     DropdownField::create(

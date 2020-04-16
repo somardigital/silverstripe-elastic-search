@@ -3,7 +3,7 @@ Name: somar_search
 ---
 Somar\Search\ElasticSearchService:
   mappingProperties:
-    page_id:
+    object_id:
       type: text
       index: false
     title:
