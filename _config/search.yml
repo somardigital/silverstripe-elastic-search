@@ -16,7 +16,11 @@ Somar\Search\ElasticSearchService:
       type: text
     type:
       type: keyword
+    sort_date:
+      type: date
     created:
+      type: date
+    last_edited:
       type: date
     last_indexed:
       type: date
