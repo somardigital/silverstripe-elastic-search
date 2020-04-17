@@ -2,19 +2,14 @@
 
 namespace Somar\Search\Control;
 
-use GWRC\Website\Model\DocumentLibrary\Document;
 use PageController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\FieldType\DBText;
-use SilverStripe\View\ArrayData;
 use SilverStripe\View\Requirements;
 use Somar\Search\ElasticSearchService;
-use GWRC\Website\PageType\Event;
-use GWRC\Website\PageType\NewsArticle;
-use GWRC\Website\PageType\ParkPage;
 use SilverStripe\Forms\Filter\SlugFilter;
 use SilverStripe\ORM\DataObject;
 use Somar\Search\PageType\SearchPage;
@@ -67,20 +62,13 @@ class SearchPageController extends PageController
 
         $resultsData = new ArrayList();
 
-        $types = [
-            Event::class => 'event',
-            NewsArticle::class => 'news',
-            ParkPage::class => 'park',
-            Document::class => 'document'
-        ];
-
         foreach ($results['hits']['hits'] as $result) {
             $data = $result['_source'];
 
             $resultData = [
                 'title' => $data['title'],
                 'url' => $data['url'],
-                'type' => !empty($types[$data['type']]) ? $types[$data['type']] : 'page',
+                'type' => 'page',
                 'date' => $data['sort_date'],
                 'thumbnailURL' => $data['thumbnail_url'],
                 'summary' => DBText::create()
@@ -88,15 +76,7 @@ class SearchPageController extends PageController
                     ->Summary(80)
             ];
 
-            switch ($data['type']) {
-                case Document::class:
-                    $resultData['dateString'] = 'Published ' . strtoupper(date('d M Y'));
-                    $resultData['fileURL'] = $data['url'];
-                    $resultData['url'] = Document::buildLink($data['object_id'], $data['title']);
-                    break;
-            }
-
-            $this->extend('updateResultsData', $resultData);
+            $this->extend('updateResultData', $data, $resultData);
 
             $resultsData->push($resultData);
         }
