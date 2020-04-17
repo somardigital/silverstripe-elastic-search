@@ -150,6 +150,11 @@ class SearchPageController extends PageController
         // date filter/sort
         $dateConfig = $filtersConfig = SearchPage::config()->searchConfig['date'];
 
+        // sort by date when empty keword
+        if (empty($queryParams['q']) && empty($queryParams['sort'])) {
+            $queryParams['sort'] = 'desc';
+        }
+
         if (!empty($queryParams['sort'])) {
             $params['sort'][$dateConfig['field']] = $queryParams['sort'];
         }
@@ -229,6 +234,7 @@ class SearchPageController extends PageController
             'labels' => $searchConfig['labels'],
             'filters' => $filters,
             'date' => $parseConfig('date', $searchConfig['date']),
+            'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword']
             // 'searchTypes' => SearchPage::config()->get('searchTypes')
         ]);
     }

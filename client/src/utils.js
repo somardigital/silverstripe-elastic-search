@@ -69,5 +69,5 @@ export const buildSearchQueryString = params => {
     }
   })
 
-  return `?${queryParams.join("&")}`
+  return queryParams.length ? `?${queryParams.join("&")}` : ``
 }

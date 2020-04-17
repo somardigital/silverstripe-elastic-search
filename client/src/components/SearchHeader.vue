@@ -1,6 +1,7 @@
 <template>
   <div class="search__header">
-    <h2 v-if="searchedKeyword">{{ resultsCount }} results found for ‘{{ searchedKeyword }}’</h2>
+    <h2 v-if="searchedKeyword && !loadingResults">{{ resultsCount }} results found for ‘{{ searchedKeyword }}’</h2>
+    <h2 v-else-if="keyword">Searching for ‘{{ keyword }}’ ...</h2>
     <h2 v-else>{{ config.labels.title }}</h2>
     <div class="search__keyword">
       <input type="search" class="search__input" v-model="keyword" @input="onKeywordChange" />
@@ -179,7 +180,7 @@ export default {
     }, 500),
 
     search(updateURL = true) {
-      if (!this.keyword) {
+      if (!this.config.allowEmptyKeyword && !this.keyword) {
         return
       }
 
