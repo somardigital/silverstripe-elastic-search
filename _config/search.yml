@@ -24,3 +24,6 @@ Somar\Search\ElasticSearchService:
       type: date
     last_indexed:
       type: date
+    thumbnail_url:
+      type: text
+      index: false

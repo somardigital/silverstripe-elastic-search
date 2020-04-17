@@ -105,6 +105,7 @@ class SearchableDataObjectExtension extends DataExtension
             'keywords' => $this->owner->Keywords,
             'url' => str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link()),
             'type' => $this->owner->ClassName,
+            'thumbnail_url' => $this->owner->Thumbnail ? $this->owner->Thumbnail()->Link() : null,
             'sort_date' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),

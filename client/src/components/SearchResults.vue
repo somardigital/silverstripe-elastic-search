@@ -2,17 +2,29 @@
   <div v-if="pageResults.length" class="search-results">
     <ul class="search-results__list">
       <li v-for="result in pageResults" :key="result.id" class="search-results__item">
-        <a :href="result.url">
-          <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
+        <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-none d-sm-block">
+          <img :src="result.thumbnailURL" :alt="result.title" />
         </a>
-        <dir>{{ result.class }}</dir>
-        <p class="search-results__summary">{{ result.summary }}</p>
-        <a :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
-        <div class="search-results__meta">
-          <span class="search-results__updated">
-            <i class="material-icons">alarm</i>
-            Updated {{ result.lastEdited | dateFormat }}
-          </span>
+        <div class="search-results__details">
+          <a :href="result.url">
+            <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
+          </a>
+          <p class="search-results__summary">{{ result.summary }}</p>
+          <div class="d-flex">
+            <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-sm-none">
+              <img :src="result.thumbnailURL" :alt="result.title" />
+            </a>
+            <div class="search-results__meta">
+              <a v-if="result.fileURL" :href="result.fileURL" class="search-results__url" target="_blank"
+                >Download now</a
+              >
+              <a v-else :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
+              <span class="search-results__date">
+                <template v-if="result.dateString">{{ result.dateString }}</template>
+                <template v-else>Updated {{ result.date | dateFormat }}</template>
+              </span>
+            </div>
+          </div>
         </div>
       </li>
     </ul>
@@ -88,8 +100,19 @@ export default {
     padding: 0;
     margin: 0;
   }
-  &__item:not(:last-child) {
-    margin-bottom: 20px;
+  &__item {
+    display: flex;
+    &:not(:last-child) {
+      margin-bottom: 20px;
+    }
+  }
+  &__thumbnail {
+    margin-right: 20px;
+    max-width: 105px;
+  }
+  &__meta {
+    display: flex;
+    flex-direction: column;
   }
 }
 .pagination {

@@ -65,37 +65,43 @@ class SearchPageController extends PageController
         $service = new ElasticSearchService();
         $results = $service->searchDocuments($params);
 
-        $data = new ArrayList();
+        $resultsData = new ArrayList();
 
         $types = [
             Event::class => 'event',
             NewsArticle::class => 'news',
-            ParkPage::class => 'park'
+            ParkPage::class => 'park',
+            Document::class => 'document'
         ];
 
         foreach ($results['hits']['hits'] as $result) {
-            $resultData = $result['_source'];
-            $type = !empty($types[$resultData['type']]) ? $types[$resultData['type']] : 'page';
+            $data = $result['_source'];
 
-            switch ($resultData['type']) {
+            $resultData = [
+                'title' => $data['title'],
+                'url' => $data['url'],
+                'type' => !empty($types[$data['type']]) ? $types[$data['type']] : 'page',
+                'date' => $data['sort_date'],
+                'thumbnailURL' => $data['thumbnail_url'],
+                'summary' => DBText::create()
+                    ->setValue(str_replace(["\n", "\t"], '', $data['content']))
+                    ->Summary(80)
+            ];
 
-
-                default:
-                    $summary = DBText::create()
-                        ->setValue(str_replace(["\n", "\t"], '', $resultData['content']))
-                        ->Summary(80);
+            switch ($data['type']) {
+                case Document::class:
+                    $resultData['dateString'] = 'Published ' . strtoupper(date('d M Y'));
+                    $resultData['fileURL'] = $data['url'];
+                    $resultData['url'] = Document::buildLink($data['object_id'], $data['title']);
+                    break;
             }
 
-            $data->push(ArrayData::create([
-                'title' => $resultData['title'],
-                'summary' => $summary,
-                'url' => $resultData['url'],
-                'type' => $type,
-                'lastEdited' => $resultData['last_edited']
-            ]));
+            $this->extend('updateResultsData', $resultData);
+
+            $resultsData->push($resultData);
         }
 
-        return $data->toNestedArray();
+        return $resultsData->toNestedArray();
     }
 
 

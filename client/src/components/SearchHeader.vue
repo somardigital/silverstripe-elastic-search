@@ -120,8 +120,6 @@ export default {
     },
   },
 
-  mounted() {},
-
   created() {
     this.initFilters()
     this.search()
