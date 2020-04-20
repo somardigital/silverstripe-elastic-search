@@ -181,15 +181,9 @@ class ElasticSearchService
                             'query' => $params['term'],
                             'type' => 'most_fields',
                             'fuzziness' => 'AUTO:3,6',
-                            'fields' => [
-                                'title^2',
-                                'keywords^2.5',
-                                'content',
-                                'attachment.content'
-                            ],
+                            'fields' => $this->config()->searchFields,
                         ],
                     ],
-
                 ],
             ];
         }

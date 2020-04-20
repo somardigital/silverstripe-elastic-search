@@ -2,6 +2,11 @@
 Name: somar_search
 ---
 Somar\Search\ElasticSearchService:
+  searchFields:
+    - title^2
+    - keywords^2.5
+    - content
+
   mappingProperties:
     object_id:
       type: text
