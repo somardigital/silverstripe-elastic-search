@@ -177,7 +177,11 @@ class ElasticSearchService
 
     public function searchDocuments(array $params)
     {
-        $body = [];
+        $body = [
+            '_source' => [
+                'excludes' => ['attachment']
+            ]
+        ];
 
         if (!empty($params['term'])) {
             $body['query'] =        [
