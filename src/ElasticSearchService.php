@@ -68,6 +68,26 @@ class ElasticSearchService
         return $this->index;
     }
 
+    public function createAttachmentPipeline()
+    {
+        $params = [
+            'id' => 'attachment',
+            'body' => [
+                'description' => 'Extract attachment information',
+                'processors' => [
+                    [
+                        'attachment' => [
+                            'field' => 'attachment',
+                            'properties' => ["content", "content_length", "content_type"],
+                            'indexed_chars' => -1,
+                        ]
+                    ]
+                ]
+            ]
+        ];
+        return $this->client->ingest()->putPipeline($params);
+    }
+
     /**
      * Creates an index if it doesn't exist
      *
@@ -125,13 +145,20 @@ class ElasticSearchService
             'body' => $body,
         ]);
     }
+
     public function putDocument($id, $document)
     {
-        return $this->client->index([
+        $params = [
             'index' => $this->index,
             'id' => $id,
             'body' => $document,
-        ]);
+        ];
+
+        if (!empty($document['attachment'])) {
+            $params['pipeline'] = 'attachment';
+        }
+
+        return $this->client->index($params);
     }
 
     public function removeDocument($id)
@@ -158,6 +185,7 @@ class ElasticSearchService
                                 'title^2',
                                 'keywords^2.5',
                                 'content',
+                                'attachment.content'
                             ],
                         ],
                     ],
