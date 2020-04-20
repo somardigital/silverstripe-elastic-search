@@ -140,10 +140,16 @@ class ElasticSearchService
             $body[] = $doc['searchData'];
         }
 
-        return $this->client->bulk([
+        $params = [
             'index' => $this->index,
             'body' => $body,
-        ]);
+        ];
+
+        if (!empty(array_column(array_column($documents, 'searchData'), 'attachment'))) {
+            $params['pipeline'] = 'attachment';
+        }
+
+        return $this->client->bulk($params);
     }
 
     public function putDocument($id, $document)
