@@ -7,6 +7,7 @@ use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
 use Symbiote\QueuedJobs\Services\QueuedJobService;
 use Page;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 
@@ -23,15 +24,19 @@ class SearchIndexJob extends AbstractQueuedJob
      * @var int
      */
     private static $limit = 500;
+    // private static $limit = 2;
+
+    // index to the records array currently being indexed
+    private $currentIndex = 0;
+
+    private $records = [];
 
     public function __construct($params = null)
     {
-        $pages = $this->pagesToIndex();
-        $limit = $this->config()->get('limit');
-        $count = $pages->count();
+        $this->records = $this->recordsToIndex();
 
         $this->currentStep = 0;
-        $this->totalSteps = $count ? ceil($count / $limit) : 1;
+        $this->totalSteps = array_reduce($this->records, fn ($sum, $list) => $sum + $list['count'], 0);
         $this->complete = false;
     }
 
@@ -42,9 +47,7 @@ class SearchIndexJob extends AbstractQueuedJob
 
     public function process()
     {
-        ++$this->currentStep;
-
-        $this->update($this->config()->get('limit'));
+        $this->update($this->config()->limit);
 
         if ($this->currentStep >= $this->totalSteps) {
             $this->messages[] = 'Done.';
@@ -56,22 +59,35 @@ class SearchIndexJob extends AbstractQueuedJob
     private function update($limit)
     {
         $service = new ElasticSearchService();
-        $pages = $this->pagesToIndex()->limit($limit, ($this->currentStep - 1) * $limit);
-        $documents = [];
+        $indexedTypes = array_filter($this->records, fn ($i) => $i < $this->currentIndex, ARRAY_FILTER_USE_KEY);
+        $indexedTypesCount = array_reduce($indexedTypes, fn ($sum, $list) => $sum + $list['count'], 0);
 
-        if ($pages->count()) {
-            foreach ($pages as $page) {
-                if (!$page->isIndexed()) {
+        $records = $this->records[$this->currentIndex]['list']->limit($limit, ($this->currentStep - $indexedTypesCount));
+        $documents = [];
+        $skipped = 0;
+
+        if ($records->count()) {
+            foreach ($records as $record) {
+                ++$this->currentStep;
+
+                if (!$record->isIndexed()) {
+                    $skipped++;
                     continue;
                 }
 
-                if ($searchData = $page->searchData()) {
-                    $documents[] = [
-                        'id' => $page->GUID,
-                        'searchData' => $searchData
-                    ];
+                if (!$record->GUID) {
+                    $record->setGUID();
                 }
+
+                $documents[] = [
+                    'id' => $record->GUID,
+                    'searchData' => $record->searchData()
+                ];
             }
+        }
+
+        if ($this->currentStep - $indexedTypesCount == $this->records[$this->currentIndex]['count']) {
+            $this->currentIndex++;
         }
 
         if (!empty($documents)) {
@@ -82,18 +98,18 @@ class SearchIndexJob extends AbstractQueuedJob
                     $error = $result['items'][0]['index']['error'];
                     throw new Exception(implode(': ', $error));
                 }
-
-                $this->messages[] = sprintf(
-                    'Indexed %s pages',
-                    count($documents)
-                );
             } catch (\Exception $e) {
                 $this->messages[] = 'Exception: ' . $e->getMessage();
                 throw $e;
             }
-        } else {
-            $this->messages[] = "No documents to index";
         }
+
+        $this->messages[] = sprintf(
+            'Indexed %s records of %s, %s records were skipped',
+            count($documents),
+            $records->dataclass(),
+            $skipped
+        );
     }
 
     private function requeue()
@@ -102,15 +118,28 @@ class SearchIndexJob extends AbstractQueuedJob
             ->queueJob(new self(), date('Y-m-d H:i:s', time() + 300));
     }
 
-    private function pagesToIndex()
+    private function recordsToIndex()
     {
+        $records = [];
         $original_stage = Versioned::get_stage();
         Versioned::set_stage(Versioned::LIVE);
 
-        $pages = Page::get();
+        $records[] = [
+            'list' => Page::get(),
+            'count' => Page::get()->count()
+        ];
+
+        if (!empty($this->config()->IndexedClasses)) {
+            foreach ($this->config()->IndexedClasses as $class) {
+                $records[] = [
+                    'list' =>  DataObject::get($class),
+                    'count' => DataObject::get($class)->count()
+                ];
+            }
+        }
 
         Versioned::set_stage($original_stage);
 
-        return $pages;
+        return $records;
     }
 }
