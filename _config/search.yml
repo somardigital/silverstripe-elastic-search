@@ -9,8 +9,7 @@ Somar\Search\ElasticSearchService:
 
   mappingProperties:
     object_id:
-      type: text
-      index: false
+      type: long
     title:
       type: text
     content:
