@@ -66,10 +66,15 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function updateSearchIndex()
     {
-        if ($this->owner->isIndexed() && $searchData = $this->owner->searchData()) {
+        if ($this->owner->isIndexed()) {
+
+            if (!$this->owner->GUID) {
+                $this->owner->setGUID();
+            }
+
             try {
                 $service = new ElasticSearchService();
-                $service->putDocument($this->owner->GUID, $searchData);
+                $service->putDocument($this->owner->GUID, $this->owner->searchData());
 
                 // Update LastIndexed timestamp
                 $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
@@ -90,14 +95,6 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function searchData()
     {
-        // cannot index a document without a GUID
-        // write this DataObject to generate a GUID
-        if (empty($this->owner->GUID)) {
-            $this->logger()->error("Attempted to index an object, but it had no GUID. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-
-            return null;
-        }
-
         $searchData = [
             'object_id' => $this->owner->ID,
             'title' => $this->owner->Title,
@@ -127,6 +124,28 @@ class SearchableDataObjectExtension extends DataExtension
             return trim(Convert::xml2raw($content));
         } else {
             return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
+        }
+    }
+
+    /**
+     * Sets GUID without triggering write hooks
+     *
+     * @return void
+     */
+    public function setGUID()
+    {
+        if (empty($this->owner->GUID)) {
+            $this->owner->GUID = Uuid::uuid4()->toString();
+
+            $data = ['GUID' => $this->owner->GUID];
+            $where = ['ID' => $this->owner->ID];
+
+            $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
+            SQLUpdate::create($table, $data, $where)->execute();
+
+            if ($this->owner->has_extension(Versioned::class)) {
+                SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            }
         }
     }
 
