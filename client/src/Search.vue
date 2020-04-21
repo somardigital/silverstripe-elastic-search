@@ -61,3 +61,8 @@ export default {
   },
 }
 </script>
+<style lang="scss" scoped>
+#search-app {
+  position: relative;
+}
+</style>

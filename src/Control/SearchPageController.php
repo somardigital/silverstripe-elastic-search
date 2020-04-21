@@ -232,14 +232,24 @@ class SearchPageController extends PageController
             }
         }
 
-
-        return json_encode([
+        $config = [
             'labels' => $searchConfig['labels'],
             'filters' => $filters,
             'date' => $parseConfig('date', $searchConfig['date']),
-            'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword']
-            // 'searchTypes' => SearchPage::config()->get('searchTypes')
-        ]);
+            'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword'],
+        ];
+
+        if (!empty($searchConfig['secondarySearch']) && $this->SearchType != $searchConfig['secondarySearch']) {
+            $secondarySearch = SearchPage::get()->filter('SearchType', $searchConfig['secondarySearch'])->first();
+            $searchTypeConfig = SearchPage::config()->searchTypes[$secondarySearch->SearchType];
+
+            $config['secondarySearch'] = [
+                'title' => 'Search in ' . strtolower($searchTypeConfig['name']),
+                'url' => $secondarySearch->Link()
+            ];
+        }
+
+        return json_encode($config);
     }
 
     /**

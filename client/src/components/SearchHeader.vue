@@ -7,6 +7,12 @@
       <input type="search" class="search__input" v-model="keyword" @input="onKeywordChange" />
       <i class="material-icons text-primary">search</i>
     </div>
+    <a
+      v-if="config.secondarySearch"
+      :href="secondarySearchURL"
+      class="search__secondary-link btn btn-outline-primary btn-round"
+      >{{ config.secondarySearch.title }}</a
+    >
 
     <div class="search__filters">
       <h3 class="search__hint">{{ config.labels.filtersHint }}</h3>
@@ -111,6 +117,13 @@ export default {
     url: function() {
       return window.href
     },
+    secondarySearchURL: function() {
+      if (!this.config.secondarySearch) {
+        return ""
+      }
+
+      return `${this.config.secondarySearch.url}${buildSearchQueryString(this.searchParams)}`
+    },
   },
 
   watch: {
@@ -200,6 +213,14 @@ export default {
   margin-bottom: 10px;
 }
 .search {
+  &__header {
+    h2 {
+      margin-bottom: 18px;
+      @media (min-width: 768px) {
+        margin-right: 240px;
+      }
+    }
+  }
   &__keyword {
     margin-bottom: 20px;
     font-size: 1rem;
@@ -223,6 +244,16 @@ export default {
 
   &__date {
     width: 100%;
+  }
+
+  &__secondary-link {
+    margin-bottom: 20px;
+
+    @media (min-width: 768px) {
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
   }
 }
 </style>
