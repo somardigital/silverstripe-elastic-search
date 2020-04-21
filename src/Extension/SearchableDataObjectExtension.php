@@ -17,6 +17,7 @@ use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
+use SilverStripe\View\Parsers\ShortcodeParser;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 
@@ -116,6 +117,8 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function getPlainContent(): string
     {
+        ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
+
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
             $content = $this->owner->getElementsForSearch();
             // Strip line breaks from elemental markup
