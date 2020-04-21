@@ -109,6 +109,10 @@ export default {
   &__thumbnail {
     margin-right: 20px;
     max-width: 105px;
+    flex-shrink: 0;
+    img {
+      max-width: 100%;
+    }
   }
   &__meta {
     display: flex;
