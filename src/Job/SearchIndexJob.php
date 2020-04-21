@@ -52,7 +52,6 @@ class SearchIndexJob extends AbstractQueuedJob
         if ($this->currentStep >= $this->totalSteps) {
             $this->messages[] = 'Done.';
             $this->isComplete = true;
-            $this->requeue();
         }
     }
 
@@ -110,12 +109,6 @@ class SearchIndexJob extends AbstractQueuedJob
             $records->dataclass(),
             $skipped
         );
-    }
-
-    private function requeue()
-    {
-        singleton(QueuedJobService::class)
-            ->queueJob(new self(), date('Y-m-d H:i:s', time() + 300));
     }
 
     private function recordsToIndex()
