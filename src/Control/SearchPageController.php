@@ -47,18 +47,19 @@ class SearchPageController extends PageController
     {
         $params = $this->buildSearchParams($request);
 
-        $data = [
-            'results' => $this->getResults($params)
-        ];
-
+        $data = $this->getSearchResponse($params);
 
         return $this->json($data);
     }
 
-    protected function getResults($params)
+    protected function getSearchResponse($params)
     {
         $service = new ElasticSearchService();
         $results = $service->searchDocuments($params);
+
+        if (!empty($results['error'])) {
+            return $results;
+        }
 
         $resultsData = new ArrayList();
 
@@ -81,7 +82,9 @@ class SearchPageController extends PageController
             $resultsData->push($resultData);
         }
 
-        return $resultsData->toNestedArray();
+        return [
+            'results' => $resultsData->toNestedArray()
+        ];
     }
 
 

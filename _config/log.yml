@@ -1,7 +1,5 @@
 ---
 Name: somar_search_errors
-Only:
-  environment: dev
 ---
 SilverStripe\Core\Injector\Injector:
   Somar\Search\Log\SearchLogger:

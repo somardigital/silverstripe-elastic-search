@@ -5,7 +5,11 @@ namespace Somar\Search;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Elasticsearch\ClientBuilder;
+use Exception;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Extensible;
+use SilverStripe\Core\Injector\Injector;
+use Somar\Search\Log\SearchLogger;
 
 class ElasticSearchService
 {
@@ -232,10 +236,17 @@ class ElasticSearchService
 
         $this->extend('updateSearchRequestBody', $body);
 
-        return $this->client->search([
-            'index' => $this->index,
-            'explain' => isset($params['explain']) ? $params['explain'] : false,
-            'body' => $body
-        ]);
+        try {
+            $results = $this->client->search([
+                'index' => $this->index,
+                'explain' => isset($params['explain']) ? $params['explain'] : false,
+                'body' => $body
+            ]);
+        } catch (Exception $e) {
+            Injector::inst()->get(SearchLogger::class)->error($e->getMessage());
+            $results = Director::isLive() ? ['error' => true] : json_decode($e->getMessage(), true);
+        }
+
+        return $results;
     }
 }

@@ -39,9 +39,15 @@ export default {
         },
       })
         .then(response => {
+          if (response.status >= 400 && response.status < 600) {
+            throw new Error("Bad response from server")
+          }
           return response.json()
         })
         .then(response => {
+          if (response.error) {
+            throw new Error("Search query error")
+          }
           this.results = response.results ? response.results : []
         })
         .catch(() => {
