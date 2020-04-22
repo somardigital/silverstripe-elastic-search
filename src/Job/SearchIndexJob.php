@@ -4,7 +4,6 @@ namespace Somar\Search\Job;
 
 use Exception;
 use Symbiote\QueuedJobs\Services\AbstractQueuedJob;
-use Symbiote\QueuedJobs\Services\QueuedJobService;
 use Page;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\ORM\DataObject;
@@ -24,7 +23,6 @@ class SearchIndexJob extends AbstractQueuedJob
      * @var int
      */
     private static $limit = 500;
-    // private static $limit = 2;
 
     // index to the records array currently being indexed
     private $currentIndex = 0;

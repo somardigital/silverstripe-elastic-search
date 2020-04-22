@@ -16,41 +16,15 @@ class ElasticSearchService
     use Configurable;
     use Extensible;
 
-    /**
-     * @config
-     *
-     * Add addtional mappings by adding a `search.yml` config to your own project. e.g.
-     *
-     * ---
-     * Name: gwrc_search
-     * After:
-     *   - "#somar_search"
-     * ---
-     * Somar\Search\ElasticSearchService:
-     *   mappingProperties:
-     *     custom_field_one:
-     *       type: text
-     *     custom_field_two:
-     *       type: date
-     *
-     * To update the search query you can use updateSearchRequestBody hook
-     *
-     */
-
     private static $mappingProperties = [];
 
     private $client;
     private $index;
 
-    public function __construct(bool $readOnly = false)
+    public function __construct()
     {
-        if ($readOnly) {
-            $apiID = Environment::getEnv('ELASTIC_READONLY_API_ID');
-            $apiKey = Environment::getEnv('ELASTIC_READONLY_API_KEY');
-        } else {
-            $apiID = Environment::getEnv('ELASTIC_WRITABLE_API_ID');
-            $apiKey = Environment::getEnv('ELASTIC_WRITABLE_API_KEY');
-        }
+        $apiID = Environment::getEnv('ELASTIC_API_ID');
+        $apiKey = Environment::getEnv('ELASTIC_API_KEY');
 
         $cloudID = Environment::getEnv('ELASTIC_CLOUD_ID');
         $index = Environment::getEnv('ELASTIC_INDEX');
