@@ -104,8 +104,7 @@ class SearchPageController extends PageController
             $params['term'] = $queryParams['q'];
         }
 
-        // filters
-        $filtersConfig = SearchPage::config()->searchConfig['filters'];
+        $searchConfig = SearchPage::config()->searchConfig;
 
         // overwrite with predefined search type
         if ($this->SearchType) {
@@ -118,11 +117,16 @@ class SearchPageController extends PageController
             }
 
             if (!empty($searchTypeConfig['filters'])) {
-                $filtersConfig = array_replace_recursive($filtersConfig, $searchTypeConfig['filters']);
+                $searchConfig['filters'] = array_replace_recursive($searchConfig['filters'], $searchTypeConfig['filters']);
+            }
+
+            if (!empty($searchTypeConfig['date'])) {
+                $searchConfig['date'] = array_replace_recursive($searchConfig['date'], $searchTypeConfig['date']);
             }
         }
 
-        foreach ($filtersConfig as $name => $filter) {
+        // filters
+        foreach ($searchConfig['filters'] as $name => $filter) {
             if (!empty($queryParams[$name])) {
                 $field = $filter['field'];
 
@@ -151,7 +155,7 @@ class SearchPageController extends PageController
         }
 
         // date filter/sort
-        $dateConfig = $filtersConfig = SearchPage::config()->searchConfig['date'];
+        $dateConfig = $searchConfig['date'];
 
         // sort by date when empty keword
         if (empty($queryParams['q']) && empty($queryParams['sort'])) {
