@@ -162,14 +162,25 @@ class ElasticSearchService
         ];
 
         if (!empty($params['term'])) {
-            $body['query'] =        [
+            // make sure that no field is there twice as a result of merging yml
+            $fields = [];
+            $searchFields = array_filter($this->config()->searchFields, function ($field) use (&$fields) {
+                $field = explode('^', $field)[0];
+                if (!in_array($field, $fields)) {
+                    $fields[] = $field;
+                    return true;
+                }
+                return false;
+            });
+
+            $body['query'] = [
                 'bool' => [
                     'must' => [
                         'multi_match' => [
                             'query' => $params['term'],
                             'type' => 'most_fields',
                             'fuzziness' => 'AUTO:3,6',
-                            'fields' => $this->config()->searchFields,
+                            'fields' => $searchFields,
                         ],
                     ],
                 ],
