@@ -167,11 +167,11 @@ class SearchPageController extends PageController
         }
 
         if (!empty($queryParams['dateFrom'])) {
-            $params['range'][$dateConfig['field']]['from'] = $queryParams['dateFrom'];
+            $params['range'][$dateConfig['field']]['from'] = date(\DateTime::ISO8601, strtotime($queryParams['dateFrom']));
         }
 
         if (!empty($queryParams['dateTo'])) {
-            $params['range'][$dateConfig['field']]['to'] = $queryParams['dateTo'];
+            $params['range'][$dateConfig['field']]['to'] = date(\DateTime::ISO8601, strtotime($queryParams['dateTo']));
         }
 
         $this->extend('updateSearchParams', $params, $request);
