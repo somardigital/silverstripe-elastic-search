@@ -120,7 +120,13 @@ class SearchableDataObjectExtension extends DataExtension
         ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
 
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
-            $content = $this->owner->getElementsForSearch();
+            $content = '';
+            foreach ($this->owner->ElementalArea->Elements() as $element) {
+                if ($element->isSerachable()) {
+                    $content .= strip_tags($element->forTemplate());
+                }
+            }
+
             // Strip line breaks from elemental markup
             $content = str_replace("\n", " ", $content);
             // Decode HTML entities back to plain text

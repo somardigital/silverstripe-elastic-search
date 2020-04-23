@@ -22,7 +22,7 @@ class SearchableElementExtension extends DataExtension
         // Workaround to detect if this Element has changes that need published
         if (
             Versioned::get_stage() == Versioned::LIVE
-            && !$element->IsNotSearchable
+            && $element->isSerachable()
             && $parentPage = $this->getParentPage()
         ) {
             // Update last edited before indexing
@@ -33,7 +33,7 @@ class SearchableElementExtension extends DataExtension
 
     public function onAfterDelete()
     {
-        if (!$this->owner->IsNotSearchable && $parentPage = $this->getParentPage()) {
+        if ($element->isSerachable() && $parentPage = $this->getParentPage()) {
             // Update last edited before indexing
             $parentPage->updateLastEdited();
             $parentPage->updateSearchIndex();
@@ -74,5 +74,10 @@ class SearchableElementExtension extends DataExtension
         Versioned::set_stage($originalStage);
 
         return $parent;
+    }
+
+    public function isSerachable()
+    {
+        return !($this->owner->config()->not_searchable || $this->owner->NotSearchable);
     }
 }
