@@ -149,7 +149,7 @@ export default {
   methods: {
     initFilters() {
       const uri = window.location.search.substring(1)
-      const params = new URLSearchParams(uri)
+      const params = new URLSearchParams(decodeURI(uri))
 
       this.searchedKeyword = this.keyword = params.get("q")
 
