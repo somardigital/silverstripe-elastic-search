@@ -70,7 +70,7 @@ class SearchableDataObjectExtension extends DataExtension
         if ($this->owner->isIndexed()) {
 
             if (!$this->owner->GUID) {
-                $this->owner->setGUID();
+                $this->owner->assignGUID();
             }
 
             try {
@@ -141,7 +141,7 @@ class SearchableDataObjectExtension extends DataExtension
      *
      * @return void
      */
-    public function setGUID()
+    public function assignGUID()
     {
         if (empty($this->owner->GUID)) {
             $this->owner->GUID = Uuid::uuid4()->toString();
@@ -164,8 +164,8 @@ class SearchableDataObjectExtension extends DataExtension
     public function onBeforeWrite()
     {
         if (empty($this->owner->GUID)) {
-            $uuid = Uuid::uuid4();
-            $this->owner->GUID = $uuid->toString();
+            $guid = Uuid::uuid4()->toString();
+            $this->owner->GUID = $guid;
         }
     }
 

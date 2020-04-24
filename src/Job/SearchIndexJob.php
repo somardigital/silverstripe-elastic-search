@@ -73,7 +73,7 @@ class SearchIndexJob extends AbstractQueuedJob
                 }
 
                 if (!$record->GUID) {
-                    $record->setGUID();
+                    $record->assignGUID();
                 }
 
                 $documents[] = [
