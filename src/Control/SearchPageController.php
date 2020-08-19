@@ -85,7 +85,10 @@ class SearchPageController extends PageController
         }
 
         return [
-            'results' => $resultsData->toNestedArray()
+            'results' => $resultsData->toNestedArray(),
+            'meta' => [
+                'count' => $results['hits']['total']['value']
+            ]
         ];
     }
 
