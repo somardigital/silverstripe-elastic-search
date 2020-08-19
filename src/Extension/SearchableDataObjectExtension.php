@@ -109,6 +109,10 @@ class SearchableDataObjectExtension extends DataExtension
             'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),
         ];
 
+        if (method_exists($this->owner, 'updateSearchData')) {
+            $searchData = $this->owner->updateSearchData($searchData);
+        }
+
         $this->owner->extend('updateSearchData', $searchData);
 
 
@@ -139,7 +143,7 @@ class SearchableDataObjectExtension extends DataExtension
     /**
      * Sets GUID without triggering write hooks
      *
-     * @return void
+     * @return string assigned GUID
      */
     public function assignGUID()
     {
@@ -156,6 +160,7 @@ class SearchableDataObjectExtension extends DataExtension
                 SQLUpdate::create("${table}_Live", $data, $where)->execute();
             }
         }
+        return $this->owner->GUID;
     }
 
     /**
@@ -171,15 +176,19 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function onAfterWrite()
     {
-        if (!$this->owner->has_extension(Versioned::class)) {
-            $this->updateSearchIndex();
+        if (false !== $this->owner->config()->update_index_on_save) {
+            if (!$this->owner->has_extension(Versioned::class)) {
+                $this->updateSearchIndex();
+            }
         }
     }
 
 
     public function onAfterPublish()
     {
-        $this->updateSearchIndex();
+        if (false !== $this->owner->config()->update_index_on_save) {
+            $this->updateSearchIndex();
+        }
     }
 
     /**
@@ -189,12 +198,14 @@ class SearchableDataObjectExtension extends DataExtension
     {
         parent::onAfterDelete();
 
-        try {
-            $service = new ElasticSearchService();
-            $service->removeDocument($this->owner->GUID);
-        } catch (\Exception $e) {
-            $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
+        if ($this->isIndexed()) {
+            try {
+                $service = new ElasticSearchService();
+                $service->removeDocument($this->owner->GUID);
+            } catch (\Exception $e) {
+                $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+                $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
+            }
         }
     }
 

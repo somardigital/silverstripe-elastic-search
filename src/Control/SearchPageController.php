@@ -67,14 +67,16 @@ class SearchPageController extends PageController
             $data = $result['_source'];
 
             $resultData = [
-                'title' => $data['title'],
-                'url' => $data['url'],
+                'title' => !empty($data['title']) ? $data['title'] : '',
+                'url' => !empty($data['url']) ? $data['url'] : '',
                 'type' => 'page',
-                'date' => $data['sort_date'],
-                'thumbnailURL' => $data['thumbnail_url'],
-                'summary' => DBText::create()
+                'date' => !empty($data['sort_date']) ? $data['sort_date'] : '',
+                'thumbnailURL' => !empty($data['thumbnail_url']) ? $data['thumbnail_url'] : '',
+                'summary' => !empty($data['content'])
+                    ? DBText::create()
                     ->setValue(str_replace(["\n", "\t"], '', $data['content']))
                     ->Summary(80)
+                    : ''
             ];
 
             $this->extend('updateResultData', $data, $resultData);
@@ -126,52 +128,67 @@ class SearchPageController extends PageController
         }
 
         // filters
-        foreach ($searchConfig['filters'] as $name => $filter) {
-            if (!empty($queryParams[$name])) {
-                $field = $filter['field'];
+        if (!empty($searchConfig['filters'])) {
+            foreach ($searchConfig['filters'] as $name => $filter) {
+                if (!empty($queryParams[$name])) {
+                    $field = $filter['field'];
 
-                $params['filter']["$field"] = [];
-                $params['filter']["$field:not"] = [];
+                    $params['filter']["$field"] = [];
+                    $params['filter']["$field:not"] = [];
 
-                foreach ($queryParams[$name] as $filteredValue) {
-                    // if there is no predefined option, it an option generated from tags
-                    $option = !empty($filter['options'][$filteredValue]) ? $filter['options'][$filteredValue] : ['filter' => $filteredValue];
+                    foreach ($queryParams[$name] as $filteredValue) {
+                        // if there is no predefined option, it an option generated from tags
+                        $option = !empty($filter['options'][$filteredValue]) ? $filter['options'][$filteredValue] : ['filter' => $filteredValue];
 
-                    foreach (["", ":not"] as $type) {
-                        if (!empty($option['filter' . $type])) {
-                            // allow single or multiple values for each filter option
-                            $filterValue = is_array($option['filter' . $type]) ? $option['filter' . $type] : [$option['filter' . $type]];
-                            $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
+                        foreach (["", ":not"] as $type) {
+                            if (!empty($option['filter' . $type])) {
+                                // allow single or multiple values for each filter option
+                                $filterValue = is_array($option['filter' . $type]) ? $option['filter' . $type] : [$option['filter' . $type]];
+                                $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
+                            }
                         }
                     }
-                }
 
-                // to not have the same filter including and excluding at the same time
-                if (!empty($params['filter']["$field"]) && !empty($params['filter']["$field:not"])) {
-                    $params['filter']["$field:not"] = array_values(array_diff($params['filter']["$field:not"], $params['filter']["$field"]));
-                    $params['filter']["$field"] = [];
+                    // to not have the same filter including and excluding at the same time
+                    if (!empty($params['filter']["$field"]) && !empty($params['filter']["$field:not"])) {
+                        $params['filter']["$field:not"] = array_values(array_diff($params['filter']["$field:not"], $params['filter']["$field"]));
+                        $params['filter']["$field"] = [];
+                    }
                 }
             }
         }
 
         // date filter/sort
-        $dateConfig = $searchConfig['date'];
+        if (!empty($searchConfig['date'])) {
+            $dateConfig = $searchConfig['date'];
 
-        // sort by date when empty keword
-        if (empty($queryParams['q']) && empty($queryParams['sort'])) {
-            $queryParams['sort'] = 'desc';
+            // sort by date when empty keword
+            if (empty($queryParams['q']) && empty($queryParams['sort'])) {
+                $queryParams['sort'] = 'desc';
+            }
+
+            if (!empty($queryParams['sort'])) {
+                $params['sort'][$dateConfig['field']] = $queryParams['sort'];
+            }
+
+            if (!empty($queryParams['dateFrom'])) {
+                $params['range'][$dateConfig['field']]['from'] = date(\DateTime::ISO8601, strtotime($queryParams['dateFrom']));
+            }
+
+            if (!empty($queryParams['dateTo'])) {
+                $params['range'][$dateConfig['field']]['to'] = date(\DateTime::ISO8601, strtotime($queryParams['dateTo']));
+            }
         }
 
-        if (!empty($queryParams['sort'])) {
-            $params['sort'][$dateConfig['field']] = $queryParams['sort'];
+        // limit, offset
+        if (!empty($queryParams['size'])) {
+            $params['size'] = (int) $queryParams['size'];
+        } else {
+            $params['size'] = 50;
         }
 
-        if (!empty($queryParams['dateFrom'])) {
-            $params['range'][$dateConfig['field']]['from'] = date(\DateTime::ISO8601, strtotime($queryParams['dateFrom']));
-        }
-
-        if (!empty($queryParams['dateTo'])) {
-            $params['range'][$dateConfig['field']]['to'] = date(\DateTime::ISO8601, strtotime($queryParams['dateTo']));
+        if (!empty($queryParams['offset'])) {
+            $params['offset'] = (int) $queryParams['offset'];
         }
 
         $this->extend('updateSearchParams', $params, $request);
@@ -230,18 +247,23 @@ class SearchPageController extends PageController
 
         $filters = [];
 
-        foreach ($searchConfig['filters'] as $name => $filter) {
-            if ($filterConfig = $parseConfig($name, $filter)) {
-                $filters[] = $filterConfig;
+        if (!empty($searchConfig['filters'])) {
+            foreach ($searchConfig['filters'] as $name => $filter) {
+                if ($filterConfig = $parseConfig($name, $filter)) {
+                    $filters[] = $filterConfig;
+                }
             }
         }
 
         $config = [
             'labels' => $searchConfig['labels'],
             'filters' => $filters,
-            'date' => $parseConfig('date', $searchConfig['date']),
             'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword'],
         ];
+
+        if (!empty($searchConfig['date'])) {
+            $config['date'] = $parseConfig('date', $searchConfig['date']);
+        }
 
         if (!empty($searchConfig['secondarySearch']) && $this->SearchType != $searchConfig['secondarySearch']) {
             $secondarySearch = SearchPage::get()->filter('SearchType', $searchConfig['secondarySearch'])->first();

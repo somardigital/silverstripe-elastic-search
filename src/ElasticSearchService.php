@@ -219,6 +219,14 @@ class ElasticSearchService
             }
         }
 
+        if (!empty($params['size'])) {
+            $body['size'] = $params['size'];
+        }
+
+        if (!empty($params['offset'])) {
+            $body['offset'] = $params['offset'];
+        }
+
         $this->extend('updateSearchRequestBody', $body);
 
         try {
