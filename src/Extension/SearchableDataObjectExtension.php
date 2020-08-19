@@ -67,27 +67,36 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function updateSearchIndex()
     {
-        if ($this->owner->isIndexed()) {
+        if (!$this->owner->GUID) {
+            $this->owner->assignGUID();
+        }
 
-            if (!$this->owner->GUID) {
-                $this->owner->assignGUID();
+        try {
+            $service = new ElasticSearchService();
+            $service->putDocument($this->owner->GUID, $this->owner->searchData());
+
+            // Update LastIndexed timestamp
+            $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
+
+            SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+
+            if ($this->owner->has_extension(Versioned::class)) {
+                SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
             }
+        } catch (\Exception $e) {
+            $this->logger()->error("Unable to re-index object. Index {$service->getIndexName()}, ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
+        }
+    }
 
-            try {
-                $service = new ElasticSearchService();
-                $service->putDocument($this->owner->GUID, $this->owner->searchData());
+    public function removeFromIndex()
+    {
 
-                // Update LastIndexed timestamp
-                $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
-
-                SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
-
-                if ($this->owner->has_extension(Versioned::class)) {
-                    SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
-                }
-            } catch (\Exception $e) {
-                $this->logger()->error("Unable to re-index object. Index {$service->getIndexName()}, ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
-            }
+        try {
+            $service = new ElasticSearchService();
+            $service->removeDocument($this->owner->GUID);
+        } catch (\Exception $e) {
+            $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
+            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
         }
     }
 
@@ -101,13 +110,16 @@ class SearchableDataObjectExtension extends DataExtension
             'title' => $this->owner->Title,
             'content' => $this->owner->getPlainContent(),
             'keywords' => $this->owner->Keywords,
-            'url' => str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link()),
             'type' => $this->owner->ClassName,
             'thumbnail_url' => $this->owner->Thumbnail ? $this->owner->Thumbnail()->Link() : null,
             'sort_date' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_edited' => date(\DateTime::ISO8601, strtotime($this->owner->LastEdited)),
             'last_indexed' => date(\DateTime::ISO8601, strtotime(DBDatetime::now()->Rfc2822())),
         ];
+
+        if (method_exists($this->owner, 'Link')) {
+            $searchData['url'] = str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link());
+        }
 
         if (method_exists($this->owner, 'updateSearchData')) {
             $searchData = $this->owner->updateSearchData($searchData);
@@ -176,7 +188,7 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function onAfterWrite()
     {
-        if (false !== $this->owner->config()->update_index_on_save) {
+        if ($this->isIndexed() && false !== $this->owner->config()->update_index_on_save) {
             if (!$this->owner->has_extension(Versioned::class)) {
                 $this->updateSearchIndex();
             }
@@ -186,8 +198,15 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function onAfterPublish()
     {
-        if (false !== $this->owner->config()->update_index_on_save) {
+        if ($this->isIndexed() && false !== $this->owner->config()->update_index_on_save) {
             $this->updateSearchIndex();
+        }
+    }
+
+    public function onAfterUnpublish()
+    {
+        if ($this->isIndexed()) {
+            $this->removeFromIndex();
         }
     }
 
@@ -199,13 +218,7 @@ class SearchableDataObjectExtension extends DataExtension
         parent::onAfterDelete();
 
         if ($this->isIndexed()) {
-            try {
-                $service = new ElasticSearchService();
-                $service->removeDocument($this->owner->GUID);
-            } catch (\Exception $e) {
-                $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-                $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
-            }
+            $this->removeFromIndex();
         }
     }
 
