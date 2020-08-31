@@ -39,7 +39,8 @@
           v-for="page in pageCount"
           :key="page"
           class="pagination__page"
-          :class="{ 'pagination__page--active': currentPage == page }"
+          :class="{ 'pagination__page--active': currentPage == page, 'pagination__page--first': page == 1,
+          'pagination__page--last': page == pageCount }"
         >
           <a
             @click.prevent="changePage(page)"

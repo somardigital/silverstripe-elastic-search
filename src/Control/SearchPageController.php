@@ -260,6 +260,7 @@ class SearchPageController extends PageController
 
         $config = [
             'labels' => $searchConfig['labels'],
+            'placeholder' => $searchConfig['placeholder'] ?? '',
             'filters' => $filters,
             'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword'],
         ];
