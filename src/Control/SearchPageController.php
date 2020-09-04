@@ -225,11 +225,12 @@ class SearchPageController extends PageController
 
             if (!empty($config['tag']) && $tags = DataObject::get($config['tag'])->toArray()) {
                 $slugFilter = SlugFilter::create();
-                $options = array_map(fn ($tag) =>
-                [
-                    'name' => $tag->Title,
-                    'value' => $slugFilter->filter($tag->Title)
-                ], $tags);
+                $options = array_map(function ($tag) {
+                    return [
+                        'name' => $tag->Title,
+                        'value' => $slugFilter->filter($tag->Title)
+                    ];
+                }, $tags);
             }
 
             if (!empty($config['options'])) {

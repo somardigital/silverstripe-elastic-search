@@ -28,7 +28,9 @@ class SearchPage extends Page
             $searchTypesConfig = $this->config()->get('searchTypes');
 
             if (!empty($searchTypesConfig)) {
-                $searchTypes = array_map(fn ($type) => $type['name'], $searchTypesConfig);
+                $searchTypes = array_map(function($type) {
+                    return $type['name'];
+                }, $searchTypesConfig);
                 $fields->addFieldToTab(
                     'Root.Main',
                     DropdownField::create(

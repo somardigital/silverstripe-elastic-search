@@ -34,7 +34,9 @@ class SearchIndexJob extends AbstractQueuedJob
         $this->records = $this->recordsToIndex();
 
         $this->currentStep = 0;
-        $this->totalSteps = array_reduce($this->records, fn ($sum, $list) => $sum + $list['count'], 0);
+        $this->totalSteps = array_reduce($this->records, function($sum, $list) {
+            return $sum + $list['count'];
+        }, 0);
         $this->complete = false;
     }
 
@@ -56,8 +58,12 @@ class SearchIndexJob extends AbstractQueuedJob
     private function update($limit)
     {
         $service = new ElasticSearchService();
-        $indexedTypes = array_filter($this->records, fn ($i) => $i < $this->currentIndex, ARRAY_FILTER_USE_KEY);
-        $indexedTypesCount = array_reduce($indexedTypes, fn ($sum, $list) => $sum + $list['count'], 0);
+        $indexedTypes = array_filter($this->records, function ($i) {
+            return $i < $this->currentIndex;
+        }, ARRAY_FILTER_USE_KEY);
+        $indexedTypesCount = array_reduce($indexedTypes, function ($sum, $list) {
+            return $sum + $list['count'];
+        }, 0);
 
         $records = $this->records[$this->currentIndex]['list']->limit($limit, ($this->currentStep - $indexedTypesCount));
         $documents = [];
