@@ -26,6 +26,12 @@ class ElasticSearchService
         $apiID = Environment::getEnv('ELASTIC_API_ID');
         $apiKey = Environment::getEnv('ELASTIC_API_KEY');
 
+        // Try get user/password if not using API Key
+        if (empty($apiID) && empty($apiKey)) {
+            $username = Environment::getEnv('ELASTIC_USERNAME');
+            $password = Environment::getEnv('ELASTIC_PASSWORD');
+        }
+
         $cloudID = Environment::getEnv('ELASTIC_CLOUD_ID');
         $index = Environment::getEnv('ELASTIC_INDEX');
 
@@ -35,10 +41,18 @@ class ElasticSearchService
 
         $this->index = $index;
 
-        $this->client = ClientBuilder::create()
-            ->setElasticCloudId($cloudID)
-            ->setApiKey($apiID, $apiKey)
-            ->build();
+        if (empty($apiID) && empty($apiKey)) {
+            $this->client = ClientBuilder::create()
+                ->setElasticCloudId($cloudID)
+                ->setBasicAuthentication($username, $password)
+                ->build();
+        }
+        else {
+            $this->client = ClientBuilder::create()
+                ->setElasticCloudId($cloudID)
+                ->setApiKey($apiID, $apiKey)
+                ->build();
+        }
     }
 
     public function getIndexName(): string
