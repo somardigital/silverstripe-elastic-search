@@ -146,8 +146,12 @@ class SearchPageController extends PageController
                         foreach (["", ":not"] as $type) {
                             if (!empty($option['filter' . $type])) {
                                 // allow single or multiple values for each filter option
-                                $filterValue = is_array($option['filter' . $type]) ? $option['filter' . $type] : [$option['filter' . $type]];
-                                $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
+                                $filterValue = is_array($option['filter' . $type]) ? 
+                                    $option['filter' . $type] : [$option['filter' . $type]];
+                                $filterValue2 = is_array($params['filter'][$field . $type]) ? 
+                                    $params['filter'][$field . $type] : [$params['filter'][$field . $type]];
+                                $params['filter'][$field . $type] = array_merge($filterValue, $filterValue2);
+                                // $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
                             }
                         }
                     }
