@@ -35,8 +35,13 @@ class ElasticSearchService
         $cloudID = Environment::getEnv('ELASTIC_CLOUD_ID');
         $index = Environment::getEnv('ELASTIC_INDEX');
 
-        if (empty($cloudID) || empty($index) || empty($apiID) || empty($apiKey)) {
-            throw new \RuntimeException('Please set elastic cloudID, index, apiID and apiKey in .env file');
+        if (empty($cloudID) || empty($index)) {
+            throw new \RuntimeException('Please set ELASTIC_CLOUD_ID and ELASTIC_INDEX in the .env file');
+        }
+
+
+        if ((empty($username) || empty($password)) && (empty($apiID) || empty($apiKey))) {
+            throw new \RuntimeException('Please set ELASTIC_API_ID and ELASTIC_API_KEY or ELASTIC_USERNAME and ELASTIC_PASSWORD in the .env file');
         }
 
         $this->index = $index;
