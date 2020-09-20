@@ -33,6 +33,7 @@ class SearchableElementExtension extends DataExtension
 
     public function onAfterDelete()
     {
+        $element = $this->owner;
         if ($element->isSerachable() && $parentPage = $this->getParentPage()) {
             // Update last edited before indexing
             $parentPage->updateLastEdited();
