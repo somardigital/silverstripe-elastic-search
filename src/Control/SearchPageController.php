@@ -146,9 +146,9 @@ class SearchPageController extends PageController
                         foreach (["", ":not"] as $type) {
                             if (!empty($option['filter' . $type])) {
                                 // allow single or multiple values for each filter option
-                                $filterValue = is_array($option['filter' . $type]) ? 
+                                $filterValue = is_array($option['filter' . $type]) ?
                                     $option['filter' . $type] : [$option['filter' . $type]];
-                                $filterValue2 = is_array($params['filter'][$field . $type]) ? 
+                                $filterValue2 = is_array($params['filter'][$field . $type]) ?
                                     $params['filter'][$field . $type] : [$params['filter'][$field . $type]];
                                 $params['filter'][$field . $type] = array_merge($filterValue, $filterValue2);
                                 // $params['filter'][$field . $type] = [...$params['filter'][$field . $type], ...$filterValue];
@@ -229,7 +229,8 @@ class SearchPageController extends PageController
 
             if (!empty($config['tag']) && $tags = DataObject::get($config['tag'])->toArray()) {
                 $slugFilter = SlugFilter::create();
-                $options = array_map(function ($tag) {
+
+                $options = array_map(function ($tag) use ($slugFilter) {
                     return [
                         'name' => $tag->Title,
                         'value' => $slugFilter->filter($tag->Title)
