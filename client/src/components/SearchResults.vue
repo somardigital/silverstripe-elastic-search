@@ -19,7 +19,7 @@
                 Download now <span v-if="result.fileMetaData">{{ result.fileMetaData }}</span>
               </a>
               <a v-else :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
-              <span class="search-results__date">
+              <span v-if="result.dateString !== false" class="search-results__date">
                 <template v-if="result.dateString">{{ result.dateString }}</template>
                 <template v-else>Updated {{ result.date | dateFormat }}</template>
               </span>
@@ -35,9 +35,15 @@
             >Previous
           </a>
         </li>
-        <li v-for="page in pageCount" :key="page" class="pagination__page">
+        <li
+          v-for="page in pageCount"
+          :key="page"
+          class="pagination__page"
+          :class="{ 'pagination__page--active': currentPage == page, 'pagination__page--first': page == 1,
+          'pagination__page--last': page == pageCount }"
+        >
           <a
-            @click.prevent="currentPage = page"
+            @click.prevent="changePage(page)"
             href="#"
             class="btn btn-circle btn-outline-primary"
             :class="{ active: currentPage == page }"
@@ -76,6 +82,14 @@ export default {
     },
     pageCount: function() {
       return Math.ceil(this.results.length / this.resultsPerPage)
+    },
+  },
+  methods: {
+    changePage(page) {
+      if (this.currentPage != page) {
+        this.currentPage = page
+        window.scrollTo(0, 0)
+      }
     },
   },
   filters: {

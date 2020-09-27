@@ -4,7 +4,13 @@
     <h2 v-else-if="keyword">Searching for ‘{{ keyword }}’ ...</h2>
     <h2 v-else>{{ config.labels.title }}</h2>
     <div class="search__keyword">
-      <input type="search" class="search__input" v-model="keyword" @input="onKeywordChange" />
+      <input
+        type="search"
+        class="search__input"
+        v-model="keyword"
+        @input="onKeywordChange"
+        :placeholder="searchPlaceholder"
+      />
       <i class="material-icons text-primary">search</i>
     </div>
     <a
@@ -123,6 +129,9 @@ export default {
       }
 
       return `${this.config.secondarySearch.url}${buildSearchQueryString(this.searchParams)}`
+    },
+    searchPlaceholder: function () {
+      return this.config.placeholder || "";
     },
   },
 

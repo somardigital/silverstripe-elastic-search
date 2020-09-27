@@ -26,19 +26,38 @@ class ElasticSearchService
         $apiID = Environment::getEnv('ELASTIC_API_ID');
         $apiKey = Environment::getEnv('ELASTIC_API_KEY');
 
+        // Try get user/password if not using API Key
+        if (empty($apiID) && empty($apiKey)) {
+            $username = Environment::getEnv('ELASTIC_USERNAME');
+            $password = Environment::getEnv('ELASTIC_PASSWORD');
+        }
+
         $cloudID = Environment::getEnv('ELASTIC_CLOUD_ID');
         $index = Environment::getEnv('ELASTIC_INDEX');
 
-        if (empty($cloudID) || empty($index) || empty($apiID) || empty($apiKey)) {
-            throw new \RuntimeException('Please set elastic cloudID, index, apiID and apiKey in .env file');
+        if (empty($cloudID) || empty($index)) {
+            throw new \RuntimeException('Please set ELASTIC_CLOUD_ID and ELASTIC_INDEX in the .env file');
+        }
+
+
+        if ((empty($username) || empty($password)) && (empty($apiID) || empty($apiKey))) {
+            throw new \RuntimeException('Please set ELASTIC_API_ID and ELASTIC_API_KEY or ELASTIC_USERNAME and ELASTIC_PASSWORD in the .env file');
         }
 
         $this->index = $index;
 
-        $this->client = ClientBuilder::create()
-            ->setElasticCloudId($cloudID)
-            ->setApiKey($apiID, $apiKey)
-            ->build();
+        if (empty($apiID) && empty($apiKey)) {
+            $this->client = ClientBuilder::create()
+                ->setElasticCloudId($cloudID)
+                ->setBasicAuthentication($username, $password)
+                ->build();
+        }
+        else {
+            $this->client = ClientBuilder::create()
+                ->setElasticCloudId($cloudID)
+                ->setApiKey($apiID, $apiKey)
+                ->build();
+        }
     }
 
     public function getIndexName(): string
@@ -217,6 +236,14 @@ class ElasticSearchService
 
                 $body['query']['bool']['filter'][] = $range;
             }
+        }
+
+        if (!empty($params['size'])) {
+            $body['size'] = $params['size'];
+        }
+
+        if (!empty($params['offset'])) {
+            $body['offset'] = $params['offset'];
         }
 
         $this->extend('updateSearchRequestBody', $body);

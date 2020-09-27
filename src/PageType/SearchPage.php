@@ -5,6 +5,7 @@ namespace Somar\Search\PageType;
 use Page;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Versioned\Versioned;
 use Somar\Search\Control\SearchPageController;
 
 class SearchPage extends Page
@@ -27,7 +28,9 @@ class SearchPage extends Page
             $searchTypesConfig = $this->config()->get('searchTypes');
 
             if (!empty($searchTypesConfig)) {
-                $searchTypes = array_map(fn ($type) => $type['name'], $searchTypesConfig);
+                $searchTypes = array_map(function($type) {
+                    return $type['name'];
+                }, $searchTypesConfig);
                 $fields->addFieldToTab(
                     'Root.Main',
                     DropdownField::create(
@@ -46,5 +49,22 @@ class SearchPage extends Page
     public function getControllerName()
     {
         return SearchPageController::class;
+    }
+
+    public function requireDefaultRecords()
+    {
+        parent::requireDefaultRecords();
+
+        if (!SearchPage::get()->exists()) {
+            $searchPage = new SearchPage();
+            $searchPage->Title = 'Search results';
+            $searchPage->URLSegment = 'search';
+            $searchPage->ShowInMenus = false;
+            $searchPage->ShowInSearch = false;
+
+            $searchPage->write();
+            $searchPage->publishRecursive();
+            $searchPage->flushCache();
+        }
     }
 }

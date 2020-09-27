@@ -1,6 +1,6 @@
 <template>
   <div id="search-app">
-    <SearchHeader :resultsCount="results.length" :loadingResults="isLoading" @search="onSearch" />
+    <SearchHeader :resultsCount="resultsMeta.count" :loadingResults="isLoading" @search="onSearch" />
     <SearchResults v-if="!isLoading" :results="results" :errorMessage="error" />
     <div v-else class="search__loader"><span class="sr-only">Loading...</span></div>
   </div>
@@ -22,6 +22,7 @@ export default {
       isLoading: false,
       error: "",
       results: [],
+      resultsMeta: {},
     }
   },
   created() {},
@@ -49,6 +50,7 @@ export default {
             throw new Error("Search query error")
           }
           this.results = response.results ? response.results : []
+          this.resultsMeta = response.meta
         })
         .catch(() => {
           this.error = "An unexpected error ocurred, please refresh the page and try again"
