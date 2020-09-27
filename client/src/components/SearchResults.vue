@@ -15,9 +15,9 @@
               <img :src="result.thumbnailURL" :alt="result.title" />
             </a>
             <div class="search-results__meta">
-              <a v-if="result.fileURL" :href="result.fileURL" class="search-results__url" target="_blank"
-                >Download now</a
-              >
+              <a v-if="result.fileURL" :href="result.fileURL" class="search-results__url" target="_blank">
+                Download now <span v-if="result.fileMetaData">{{ result.fileMetaData }}</span>
+              </a>
               <a v-else :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
               <span class="search-results__date">
                 <template v-if="result.dateString">{{ result.dateString }}</template>
