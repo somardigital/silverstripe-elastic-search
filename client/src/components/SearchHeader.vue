@@ -35,6 +35,7 @@
             :searchable="false"
             @input="onFilterChange"
             @close="onCloseFilterSelect"
+            @open="addMultiSelectOverlay"
             ref="filterSelect"
           >
             <template slot="tag" slot-scope="{ option, remove }">
@@ -57,6 +58,7 @@
             :searchable="false"
             @input="onDateFilterChange"
             @close="onCloseDateSelect"
+            @open="addMultiSelectOverlay"
             ref="dateSelect"
           >
           </multiselect>
@@ -218,13 +220,63 @@ export default {
       this.$emit("search", this.searchParams)
     },
 
+    /**
+     * START: Fix for Safari on iOS (https://github.com/shentao/vue-multiselect/issues/709)
+     */
+    addMultiSelectOverlay() {
+      const body = document.querySelector("body")
+      const overlay = document.createElement("div")
+
+      overlay.classList.add("multiselect__overlay")
+
+      overlay.style.position = "fixed"
+      overlay.style.top = 0
+      overlay.style.left = 0
+      overlay.style.width = "100%"
+      overlay.style.height = "100%"
+      overlay.style.zIndex = 9999
+
+      body.appendChild(overlay)
+
+      overlay.addEventListener("click", () => {
+        if (this.$refs.filterSelect.length) {
+          this.$refs.filterSelect[0].deactivate()
+        }
+
+        if (this.$refs.dateSelect.length) {
+          this.$refs.dateSelect[0].deactivate()
+        }
+
+        this.removeMultiSelectOverlay()
+      })
+    },
+
+    removeMultiSelectOverlay() {
+      const overlay = document.querySelector(".multiselect__overlay")
+
+      if (overlay) {
+        overlay.remove()
+      }
+    },
+
     onCloseFilterSelect() {
-      this.$refs.filterSelect[0].deactivate()
+      if (this.$refs.filterSelect.length) {
+        this.$refs.filterSelect[0].deactivate()
+      }
+
+      this.removeMultiSelectOverlay()
     },
 
     onCloseDateSelect() {
-      this.$refs.dateSelect[0].deactivate()
+      if (this.$refs.dateSelect.length) {
+        this.$refs.dateSelect[0].deactivate()
+      }
+
+      this.removeMultiSelectOverlay()
     },
+    /**
+     * END: Fix for Safari on iOS
+     */
   },
 }
 </script>
