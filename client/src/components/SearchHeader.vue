@@ -34,6 +34,8 @@
             :multiple="true"
             :searchable="false"
             @input="onFilterChange"
+            @close="onCloseFilterSelect"
+            ref="filterSelect"
           >
             <template slot="tag" slot-scope="{ option, remove }">
               <span class="multiselect__tag">
@@ -54,6 +56,8 @@
             :options="config.date.options"
             :searchable="false"
             @input="onDateFilterChange"
+            @close="onCloseDateSelect"
+            ref="dateSelect"
           >
           </multiselect>
 
@@ -130,8 +134,8 @@ export default {
 
       return `${this.config.secondarySearch.url}${buildSearchQueryString(this.searchParams)}`
     },
-    searchPlaceholder: function () {
-      return this.config.placeholder || "";
+    searchPlaceholder: function() {
+      return this.config.placeholder || ""
     },
   },
 
@@ -212,6 +216,14 @@ export default {
       }
 
       this.$emit("search", this.searchParams)
+    },
+
+    onCloseFilterSelect() {
+      this.$refs.filterSelect[0].deactivate()
+    },
+
+    onCloseDateSelect() {
+      this.$refs.dateSelect[0].deactivate()
     },
   },
 }
