@@ -6,7 +6,7 @@
           <img :src="result.thumbnailURL" :alt="result.title" />
         </a>
         <div class="search-results__details">
-          <a :href="result.url">
+          <a class="search-results__details--title" :href="result.url">
             <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
           </a>
           <p class="search-results__summary">{{ result.summary }}</p>
@@ -130,7 +130,20 @@ export default {
     img {
       max-width: 100%;
     }
+
+    &:before {
+      content: none;
+    }
   }
+
+  &__details {
+    &--title {
+      &:before {
+        content: none;
+      }
+    }
+  }
+
   &__meta {
     display: flex;
     flex-direction: column;
