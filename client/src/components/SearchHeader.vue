@@ -30,11 +30,15 @@
             v-model="filters[filterConfig.name]"
             track-by="value"
             label="name"
+            role="button"
+            aria-expanded="false"
+            :aria-controls="`multi-filter-${filterConfig.name}`"
+            :max-height="400"
             :placeholder="filterConfig.placeholder"
             :options="filterConfig.options"
             :multiple="true"
             :searchable="false"
-            :aria-label="filterConfig.name"
+            :aria-label="filterConfig.placeholder"
             @keydown.native.space="keySpaceDown($event, $refs.filterSelect[i])"
             @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
             @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
@@ -61,6 +65,10 @@
             label="name"
             placeholder="By date"
             :aria-label="`By date`"
+            role="button"
+            aria-expanded="false"
+            aria-controls="multi-filter-by-date"
+            :max-height="400"
             :options="config.date.options"
             :searchable="false"
             @keydown.native.space="keySpaceDown($event, $refs.dateSelect)"
@@ -123,8 +131,10 @@ export default {
   mounted() {
     this.$nextTick().then(() => {
       this.$el.querySelectorAll(".multiselect").forEach(item => {
-        item.setAttribute("role", "button")
-        item.setAttribute("aria-pressed", "false")
+        console.log(item)
+        const id = item.getAttribute("aria-controls")
+        console.log(id)
+        item.querySelector(".multiselect__content-wrapper").id = id
       })
     })
   },
@@ -307,7 +317,7 @@ export default {
      */
     addMultiSelectOverlay(el) {
       el.curPointer = el.pointer
-      el.$el.setAttribute("aria-pressed", "true")
+      el.$el.setAttribute("aria-expanded", "true")
       const body = document.querySelector("body")
       const overlay = document.createElement("div")
       window.removeEventListener("keydown", this.keydownHandler)
@@ -345,7 +355,6 @@ export default {
       this.$el.querySelectorAll(".multiselect__option").forEach(item => {
         item.setAttribute("tabindex", 0)
         item.setAttribute("role", "button")
-        item.setAttribute("aria-pressed", "false")
       })
     },
 
@@ -365,7 +374,7 @@ export default {
       if (this.$refs.filterSelect.length) {
         this.$refs.filterSelect[0].deactivate()
         this.$refs.filterSelect.forEach(filter => {
-          filter.$el.setAttribute("aria-pressed", "false")
+          filter.$el.setAttribute("aria-expanded", "false")
         })
       }
 
@@ -375,10 +384,10 @@ export default {
     onCloseDateSelect() {
       if (Array.isArray(this.$refs.dateSelect) && this.$refs.dateSelect.length) {
         this.$refs.dateSelect[0].deactivate()
-        this.$refs.dateSelect[0].$el.setAttribute("aria-pressed", "false")
+        this.$refs.dateSelect[0].$el.setAttribute("aria-expanded", "false")
       } else {
         this.$refs.dateSelect.deactivate()
-        this.$refs.dateSelect.$el.setAttribute("aria-pressed", "false")
+        this.$refs.dateSelect.$el.setAttribute("aria-expanded", "false")
       }
 
       this.removeMultiSelectOverlay()
