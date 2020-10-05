@@ -116,6 +116,16 @@ export default {
     }
   },
 
+  mounted() {
+    this.$nextTick().then(() => {
+      this.$el.querySelectorAll(".multiselect").forEach(item => {
+        item.setAttribute("role", "button")
+        item.setAttribute("aria-pressed", "false")
+        item.setAttribute("aria-label", item.querySelector("span.multiselect__placeholder").innerHTML.trim())
+      })
+    })
+  },
+
   computed: {
     searchParams: function() {
       const filters = {}
@@ -284,6 +294,7 @@ export default {
      */
     addMultiSelectOverlay(el) {
       el.curPointer = el.pointer
+      el.$el.setAttribute("aria-pressed", "true")
       const body = document.querySelector("body")
       const overlay = document.createElement("div")
       window.removeEventListener("keydown", this.keydownHandler)
@@ -305,8 +316,10 @@ export default {
           this.$refs.filterSelect[0].deactivate()
         }
 
-        if (this.$refs.dateSelect.length) {
+        if (Array.isArray(this.$refs.dateSelect) && this.$refs.dateSelect.length) {
           this.$refs.dateSelect[0].deactivate()
+        } else {
+          this.$refs.dateSelect.deactivate()
         }
 
         this.removeMultiSelectOverlay()
@@ -335,14 +348,21 @@ export default {
     onCloseFilterSelect() {
       if (this.$refs.filterSelect.length) {
         this.$refs.filterSelect[0].deactivate()
+        this.$refs.filterSelect.forEach(filter => {
+          filter.$el.setAttribute("aria-pressed", "false")
+        })
       }
 
       this.removeMultiSelectOverlay()
     },
 
     onCloseDateSelect() {
-      if (this.$refs.dateSelect.length) {
+      if (Array.isArray(this.$refs.dateSelect) && this.$refs.dateSelect.length) {
         this.$refs.dateSelect[0].deactivate()
+        this.$refs.dateSelect[0].$el.setAttribute("aria-pressed", "false")
+      } else {
+        this.$refs.dateSelect.deactivate()
+        this.$refs.dateSelect.$el.setAttribute("aria-pressed", "false")
       }
 
       this.removeMultiSelectOverlay()
