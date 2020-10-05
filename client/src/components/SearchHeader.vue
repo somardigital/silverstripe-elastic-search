@@ -34,6 +34,7 @@
             :options="filterConfig.options"
             :multiple="true"
             :searchable="false"
+            @keydown.native.space="keySpaceDown($refs.filterSelect[i])"
             @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
             @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
             @keydown.native.down="keyArrowDown($refs.filterSelect[i])"
@@ -60,6 +61,7 @@
             placeholder="By date"
             :options="config.date.options"
             :searchable="false"
+            @keydown.native.space="keySpaceDown($refs.dateSelect)"
             @keydown.native.tab="keyTabDown($event, $refs.dateSelect)"
             @keydown.native.up="keyArrowUp($refs.dateSelect)"
             @keydown.native.down="keyArrowDown($refs.dateSelect)"
@@ -179,6 +181,14 @@ export default {
   },
 
   methods: {
+    keySpaceDown(el) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      e.stopPropagation()
+      const cur = el.$refs.list.children[0].children[el.curPointer]
+      cur.dispatchEvent(new Event("click"))
+    },
+
     keyTabDown(e, el) {
       e.preventDefault()
       e.stopImmediatePropagation()
