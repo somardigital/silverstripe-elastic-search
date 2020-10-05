@@ -34,7 +34,8 @@
             :options="filterConfig.options"
             :multiple="true"
             :searchable="false"
-            @keydown.native.space="keySpaceDown($refs.filterSelect[i])"
+            :aria-label="filterConfig.name"
+            @keydown.native.space="keySpaceDown($event, $refs.filterSelect[i])"
             @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
             @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
             @keydown.native.down="keyArrowDown($refs.filterSelect[i])"
@@ -59,9 +60,10 @@
             track-by="value"
             label="name"
             placeholder="By date"
+            :aria-label="`By date`"
             :options="config.date.options"
             :searchable="false"
-            @keydown.native.space="keySpaceDown($refs.dateSelect)"
+            @keydown.native.space="keySpaceDown($event, $refs.dateSelect)"
             @keydown.native.tab="keyTabDown($event, $refs.dateSelect)"
             @keydown.native.up="keyArrowUp($refs.dateSelect)"
             @keydown.native.down="keyArrowDown($refs.dateSelect)"
@@ -123,7 +125,6 @@ export default {
       this.$el.querySelectorAll(".multiselect").forEach(item => {
         item.setAttribute("role", "button")
         item.setAttribute("aria-pressed", "false")
-        item.setAttribute("aria-label", item.querySelector("span.multiselect__placeholder").innerHTML.trim())
       })
     })
   },
@@ -181,46 +182,48 @@ export default {
   },
 
   methods: {
-    keySpaceDown(el) {
+    keySpaceDown(e, el) {
       e.preventDefault()
       e.stopImmediatePropagation()
       e.stopPropagation()
-      const cur = el.$refs.list.children[0].children[el.curPointer]
+      const cur = el.$refs.list.children[0].children[el.curPointer].querySelector(".multiselect__option")
       cur.dispatchEvent(new Event("click"))
     },
 
     keyTabDown(e, el) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-      e.stopPropagation()
+      if (el.isOpen) {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        e.stopPropagation()
 
-      if (e.shiftKey) {
-        const n = el.curPointer
-        if (n == 0) {
-          el.pointer = el.options.length - 1
-          el.$refs.list.scrollTop = el.$refs.list.scrollHeight
+        if (e.shiftKey) {
+          const n = el.curPointer
+          if (n == 0) {
+            el.pointer = el.options.length - 1
+            el.$refs.list.scrollTop = el.$refs.list.scrollHeight
+          } else {
+            el.pointer--
+          }
+
+          el.curPointer = el.pointer
         } else {
-          el.pointer--
+          const n = el.curPointer
+          if (n == el.options.length - 1) {
+            el.pointer = 0
+            el.$refs.list.scrollTop = 0
+          } else {
+            el.pointer++
+          }
+
+          el.curPointer = el.pointer
         }
 
-        el.curPointer = el.pointer
-      } else {
-        const n = el.curPointer
-        if (n == el.options.length - 1) {
-          el.pointer = 0
-          el.$refs.list.scrollTop = 0
-        } else {
-          el.pointer++
+        const cur = el.$refs.list.children[0].children[el.curPointer]
+        if (el.$refs.list.clientHeight - el.$refs.list.scrollTop <= cur.offsetTop) {
+          el.$refs.list.scrollTop = cur.offsetTop
+        } else if (cur.offsetTop - el.$refs.list.scrollTop < 0 ) {
+          el.$refs.list.scrollTop = cur.offsetTop
         }
-
-        el.curPointer = el.pointer
-      }
-
-      const cur = el.$refs.list.children[0].children[el.curPointer]
-      if (el.$refs.list.clientHeight - el.$refs.list.scrollTop <= cur.offsetTop) {
-        el.$refs.list.scrollTop = cur.offsetTop
-      } else if (cur.offsetTop - el.$refs.list.scrollTop < 0 ) {
-        el.$refs.list.scrollTop = cur.offsetTop
       }
     },
     keyArrowUp(el) {
@@ -348,6 +351,9 @@ export default {
 
     removeMultiSelectOverlay() {
       window.removeEventListener("keydown", this.keydownHandler)
+      this.$el.querySelectorAll(".multiselect__content-wrapper").forEach(item => {
+        item.setAttribute("tabindex", -1)
+      })
       const overlay = document.querySelector(".multiselect__overlay")
 
       if (overlay) {
