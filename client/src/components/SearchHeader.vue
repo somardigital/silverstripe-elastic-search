@@ -23,9 +23,10 @@
     <div class="search__filters">
       <h3 class="search__hint">{{ config.labels.filtersHint }}</h3>
       <div class="row">
-        <div v-for="filterConfig in config.filters" class="col-md-6" :key="filterConfig.name">
+        <div v-for="(filterConfig, i) in config.filters" class="col-md-6" :key="filterConfig.name">
           <multiselect
             class="multiselect--multiple"
+            :key="i"
             v-model="filters[filterConfig.name]"
             track-by="value"
             label="name"
@@ -33,9 +34,12 @@
             :options="filterConfig.options"
             :multiple="true"
             :searchable="false"
+            @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
+            @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
+            @keydown.native.down="keyArrowDown($refs.filterSelect[i])"
             @input="onFilterChange"
             @close="onCloseFilterSelect"
-            @open="addMultiSelectOverlay"
+            @open="addMultiSelectOverlay($refs.filterSelect[i])"
             ref="filterSelect"
           >
             <template slot="tag" slot-scope="{ option, remove }">
@@ -56,9 +60,12 @@
             placeholder="By date"
             :options="config.date.options"
             :searchable="false"
+            @keydown.native.tab="keyTabDown($event, $refs.dateSelect)"
+            @keydown.native.up="keyArrowUp($refs.dateSelect)"
+            @keydown.native.down="keyArrowDown($refs.dateSelect)"
             @input="onDateFilterChange"
             @close="onCloseDateSelect"
-            @open="addMultiSelectOverlay"
+            @open="addMultiSelectOverlay($refs.dateSelect)"
             ref="dateSelect"
           >
           </multiselect>
@@ -162,6 +169,58 @@ export default {
   },
 
   methods: {
+    keyTabDown(e, el) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      e.stopPropagation()
+
+      if (e.shiftKey) {
+        const n = el.curPointer
+        if (n == 0) {
+          el.pointer = el.options.length - 1
+          el.$refs.list.scrollTop = el.$refs.list.scrollHeight
+        } else {
+          el.pointer--
+        }
+
+        el.curPointer = el.pointer
+      } else {
+        const n = el.curPointer
+        if (n == el.options.length - 1) {
+          el.pointer = 0
+          el.$refs.list.scrollTop = 0
+        } else {
+          el.pointer++
+        }
+
+        el.curPointer = el.pointer
+      }
+
+      const cur = el.$refs.list.children[0].children[el.curPointer]
+      if (el.$refs.list.clientHeight - el.$refs.list.scrollTop <= cur.offsetTop) {
+        el.$refs.list.scrollTop = cur.offsetTop
+      } else if (cur.offsetTop - el.$refs.list.scrollTop < 0 ) {
+        el.$refs.list.scrollTop = cur.offsetTop
+      }
+    },
+    keyArrowUp(el) {
+      const n = el.curPointer
+      if (n == 0) {
+        el.pointer = el.options.length - 1
+        el.$refs.list.scrollTop = el.$refs.list.scrollHeight
+      }
+
+      el.curPointer = el.pointer
+    },
+    keyArrowDown(el) {
+      const n = el.curPointer
+      if (n == el.options.length - 1) {
+        el.pointer = 0
+        el.$refs.list.scrollTop = 0
+      }
+
+      el.curPointer = el.pointer
+    },
     initFilters() {
       const uri = window.location.search.substring(1)
       const params = new URLSearchParams(decodeURI(uri))
@@ -223,9 +282,12 @@ export default {
     /**
      * START: Fix for Safari on iOS (https://github.com/shentao/vue-multiselect/issues/709)
      */
-    addMultiSelectOverlay() {
+    addMultiSelectOverlay(el) {
+      el.curPointer = el.pointer
       const body = document.querySelector("body")
       const overlay = document.createElement("div")
+      window.removeEventListener("keydown", this.keydownHandler)
+      window.addEventListener("keydown", this.keydownHandler)
 
       overlay.classList.add("multiselect__overlay")
 
@@ -249,9 +311,20 @@ export default {
 
         this.removeMultiSelectOverlay()
       })
+
+      this.$el.querySelectorAll(".multiselect__content-wrapper").forEach(item => {
+        item.setAttribute("tabindex", 0)
+      })
+
+      this.$el.querySelectorAll(".multiselect__option").forEach(item => {
+        item.setAttribute("tabindex", 0)
+        item.setAttribute("role", "button")
+        item.setAttribute("aria-pressed", "false")
+      })
     },
 
     removeMultiSelectOverlay() {
+      window.removeEventListener("keydown", this.keydownHandler)
       const overlay = document.querySelector(".multiselect__overlay")
 
       if (overlay) {
