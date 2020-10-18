@@ -7,3 +7,6 @@ Page:
 DNADesign\Elemental\Models\BaseElement:
   extensions:
     - Somar\Search\Extension\SearchableElementExtension
+
+SilverStripe\ErrorPage\ErrorPage:
+  disable_indexing: true
