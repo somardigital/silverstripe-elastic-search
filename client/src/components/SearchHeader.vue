@@ -131,9 +131,7 @@ export default {
   mounted() {
     this.$nextTick().then(() => {
       this.$el.querySelectorAll(".multiselect").forEach(item => {
-        console.log(item)
         const id = item.getAttribute("aria-controls")
-        console.log(id)
         item.querySelector(".multiselect__content-wrapper").id = id
       })
     })
@@ -231,7 +229,7 @@ export default {
         const cur = el.$refs.list.children[0].children[el.curPointer]
         if (el.$refs.list.clientHeight - el.$refs.list.scrollTop <= cur.offsetTop) {
           el.$refs.list.scrollTop = cur.offsetTop
-        } else if (cur.offsetTop - el.$refs.list.scrollTop < 0 ) {
+        } else if (cur.offsetTop - el.$refs.list.scrollTop < 0) {
           el.$refs.list.scrollTop = cur.offsetTop
         }
       }
@@ -399,10 +397,21 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .multiselect {
   margin-bottom: 10px;
 }
+
+.multiselect__content-wrapper {
+  position: absolute;
+  z-index: 10000;
+  top: calc(100% - 1px);
+  left: 0;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 .search {
   &__header {
     h2 {
