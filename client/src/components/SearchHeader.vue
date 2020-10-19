@@ -11,7 +11,7 @@
         @input="onKeywordChange"
         :placeholder="searchPlaceholder"
       />
-      <i class="material-icons text-primary">search</i>
+      <i v-if="config.icons == 'material'" aria-hidden="true" class="material-icons text-primary">search</i>
     </div>
     <a
       v-if="config.secondarySearch"
@@ -25,7 +25,7 @@
       <div class="row">
         <div v-for="(filterConfig, i) in config.filters" class="col-md-6" :key="filterConfig.name">
           <multiselect
-            class="multiselect--multiple"
+            :class="{ 'multiselect--multiple': filterConfig.multiple }"
             :key="i"
             v-model="filters[filterConfig.name]"
             track-by="value"
@@ -36,7 +36,7 @@
             :max-height="400"
             :placeholder="filterConfig.placeholder"
             :options="filterConfig.options"
-            :multiple="true"
+            :multiple="filterConfig.multiple"
             :searchable="false"
             :aria-label="filterConfig.placeholder"
             @keydown.native.space="keySpaceDown($event, $refs.filterSelect[i])"
@@ -52,7 +52,8 @@
               <span class="multiselect__tag">
                 {{ option.name }}
                 <button class="multiselect__tag-remove" @click="remove(option)">
-                  <i class="material-icons">close</i>
+                  <i v-if="config.icons == 'material'" class="material-icons">close</i>
+                  <span v-else>x</span>
                 </button>
               </span>
             </template>

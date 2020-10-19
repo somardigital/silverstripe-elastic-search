@@ -93,6 +93,7 @@ Somar\Search\PageType\SearchPage:
   searchConfig:
     allowEmptyKeyword: false
     secondarySearch: documents
+    icons: material # adds material icon into the keyword field & dropdown tag close
     labels:
       title: Start typing to search the content
       filtersHint: Refine your search results below by selecting popular filters and/or ordering them by date.
@@ -100,6 +101,7 @@ Somar\Search\PageType\SearchPage:
       type:
       placeholder: Type of content
       field: type
+      multiple: true # allows multiple values selected
       options:
         news:
           name: News
@@ -146,14 +148,17 @@ Somar\Search\PageType\SearchPage:
         topics:
           placeholder: Topics
           field: topics
+          multiple: true
           tag: GWRC\Website\Model\DocumentLibrary\DocumentTopic
         categories:
           placeholder: Categories
           field: categories
+          multiple: true
           tag: GWRC\Website\Model\DocumentLibrary\DocumentCategory
         regions:
           placeholder: Regions
           field: regions
+          multiple: true
           tag: GWRC\Website\Model\DocumentLibrary\DocumentRegion
       date:
         field: published

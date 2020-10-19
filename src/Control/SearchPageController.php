@@ -269,6 +269,7 @@ class SearchPageController extends PageController
             'placeholder' => $searchConfig['placeholder'] ?? '',
             'filters' => $filters,
             'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword'],
+            'icons' => $searchConfig['icons'],
         ];
 
         if (!empty($searchConfig['date'])) {
