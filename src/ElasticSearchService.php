@@ -51,8 +51,7 @@ class ElasticSearchService
                 ->setElasticCloudId($cloudID)
                 ->setBasicAuthentication($username, $password)
                 ->build();
-        }
-        else {
+        } else {
             $this->client = ClientBuilder::create()
                 ->setElasticCloudId($cloudID)
                 ->setApiKey($apiID, $apiKey)
@@ -116,13 +115,17 @@ class ElasticSearchService
 
     public function setIndexMappings()
     {
+        $mappingProperties = $this->config()->mappingProperties;
+
+        $this->extend('updateMappingProperties', $mappingProperties);
+
         return $this->client->indices()->putMapping([
             'index' => $this->index,
             'body' => [
                 '_source' => [
                     'enabled' => true,
                 ],
-                'properties' => $this->config()->mappingProperties,
+                'properties' => $mappingProperties,
             ],
         ]);
     }
