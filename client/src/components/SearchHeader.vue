@@ -80,11 +80,7 @@
                 </template>
 
                 <template slot="caret" v-if="config.caretIconClass">
-                  <i
-                    class="multiselect__icon multiselect__icon--caret"
-                    :class="config.caretIconClass"
-                    aria-hidden="true"
-                  ></i>
+                  <i class="multiselect__caret-icon" :class="config.caretIconClass" aria-hidden="true"></i>
                 </template>
 
                 <template slot="tag" slot-scope="{ option, remove }">
@@ -221,7 +217,7 @@ export default {
         return this.replacePlaceholders(this.config.labels.subtitle)
       }
 
-      return ""
+      return "&nbsp;"
     },
   },
 
@@ -486,14 +482,14 @@ export default {
   width: 100%;
 }
 
-.multiselect__icon {
+.multiselect__icon,
+.multiselect__caret-icon {
   margin-right: 5px;
-
-  &--caret {
-    margin-right: 0;
-    position: absolute;
-    right: 15px;
-  }
+}
+.multiselect__caret-icon {
+  margin-right: 0;
+  position: absolute;
+  right: 15px;
 }
 
 .search {
