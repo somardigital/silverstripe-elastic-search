@@ -134,9 +134,28 @@ class SearchPageController extends PageController
             if (!empty($searchTypeConfig['filters'])) {
                 $searchConfig['filters'] = array_replace_recursive($searchConfig['filters'], $searchTypeConfig['filters']);
             }
+        }
 
-            if (!empty($searchTypeConfig['date'])) {
-                $searchConfig['date'] = array_replace_recursive($searchConfig['date'], $searchTypeConfig['date']);
+        // date filter/sort
+        if (!empty($searchConfig['filters']['date'])) {
+            $dateConfig = $searchConfig['filters']['date'];
+            unset($searchConfig['filters']['date']);
+
+            // sort by date when empty keword
+            if (empty($queryParams['q']) && empty($queryParams['sort'])) {
+                $queryParams['sort'] = 'desc';
+            }
+
+            if (!empty($queryParams['sort'])) {
+                $params['sort'][$dateConfig['field']] = $queryParams['sort'];
+            }
+
+            if (!empty($queryParams['dateFrom'])) {
+                $params['range'][$dateConfig['field']]['from'] = date(\DateTime::ISO8601, strtotime($queryParams['dateFrom']));
+            }
+
+            if (!empty($queryParams['dateTo'])) {
+                $params['range'][$dateConfig['field']]['to'] = date(\DateTime::ISO8601, strtotime($queryParams['dateTo']));
             }
         }
 
@@ -172,28 +191,6 @@ class SearchPageController extends PageController
                         $params['filter']["$field"] = [];
                     }
                 }
-            }
-        }
-
-        // date filter/sort
-        if (!empty($searchConfig['date'])) {
-            $dateConfig = $searchConfig['date'];
-
-            // sort by date when empty keword
-            if (empty($queryParams['q']) && empty($queryParams['sort'])) {
-                $queryParams['sort'] = 'desc';
-            }
-
-            if (!empty($queryParams['sort'])) {
-                $params['sort'][$dateConfig['field']] = $queryParams['sort'];
-            }
-
-            if (!empty($queryParams['dateFrom'])) {
-                $params['range'][$dateConfig['field']]['from'] = date(\DateTime::ISO8601, strtotime($queryParams['dateFrom']));
-            }
-
-            if (!empty($queryParams['dateTo'])) {
-                $params['range'][$dateConfig['field']]['to'] = date(\DateTime::ISO8601, strtotime($queryParams['dateTo']));
             }
         }
 
@@ -268,6 +265,7 @@ class SearchPageController extends PageController
                 'columns' => $config['columns'] ?? 6,
                 'showInline' => $config['showInline'] ?? false,
                 'default' => $config['default'] ?? null,
+                'searchable' => $config['searchable'] ?? false,
                 'options' => $options
             ] : null;
         };
@@ -291,10 +289,6 @@ class SearchPageController extends PageController
             'icons' => $searchConfig['icons'],
             'caretIconClass' => $searchConfig['caretIconClass'] ?? '',
         ];
-
-        if (!empty($searchConfig['date'])) {
-            $config['date'] = $parseConfig('date', $searchConfig['date']);
-        }
 
         if (!empty($searchConfig['secondarySearch']) && $this->SearchType != $searchConfig['secondarySearch']) {
             $secondarySearch = SearchPage::get()->filter('SearchType', $searchConfig['secondarySearch'])->first();

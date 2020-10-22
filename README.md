@@ -131,16 +131,16 @@ Somar\Search\PageType\SearchPage:
         documents:
           name: Documents
           filter: GWRC\Website\Model\DocumentLibrary\Document
-    date:
-      placeholder: By date
-      field: sort_date
-      options:
-        desc:
-          name: Most recent first
-        asc:
-          name: Oldest first
-        range:
-          name: Select dates
+      date:
+        placeholder: By date
+        field: sort_date
+        options:
+          desc:
+            name: Most recent first
+          asc:
+            name: Oldest first
+          range:
+            name: Select dates
 ```
 
 ## Search type
@@ -173,8 +173,8 @@ Somar\Search\PageType\SearchPage:
           field: regions
           multiple: true
           tag: GWRC\Website\Model\DocumentLibrary\DocumentRegion
-      date:
-        field: published
+        date:
+          field: published
 ```
 
 # Index creation
