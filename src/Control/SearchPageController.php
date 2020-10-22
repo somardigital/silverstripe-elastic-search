@@ -65,6 +65,17 @@ class SearchPageController extends PageController
 
         foreach ($results['hits']['hits'] as $result) {
             $data = $result['_source'];
+            $highlightData = $result['highlight'] ?? [];
+
+            if (empty($highlightData)) {
+                $summary = !empty($data['content'])
+                    ? DBText::create()
+                    ->setValue(str_replace(["\n", "\t"], '', $data['content']))
+                    ->Summary(80)
+                    : '';
+            } else {
+                $summary = str_replace(["\n", "\t"], '', reset($highlightData)[0]);
+            }
 
             $resultData = [
                 'title' => !empty($data['title']) ? $data['title'] : '',
@@ -72,14 +83,10 @@ class SearchPageController extends PageController
                 'type' => 'page',
                 'date' => !empty($data['sort_date']) ? $data['sort_date'] : '',
                 'thumbnailURL' => !empty($data['thumbnail_url']) ? $data['thumbnail_url'] : '',
-                'summary' => !empty($data['content'])
-                    ? DBText::create()
-                    ->setValue(str_replace(["\n", "\t"], '', $data['content']))
-                    ->Summary(80)
-                    : ''
+                'summary' => $summary
             ];
 
-            $this->extend('updateResultData', $data, $resultData);
+            $this->extend('updateResultData', $data, $resultData, $highlightData);
 
             $resultsData->push($resultData);
         }
@@ -103,6 +110,9 @@ class SearchPageController extends PageController
     {
         $params = [];
         $queryParams = $request->getVars();
+
+        // allow injecting search parameters
+        $this->extend('updateQueryParams', $queryParams);
 
         // keyword
         if (!empty($queryParams['q'])) {

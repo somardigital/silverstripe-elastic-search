@@ -74,13 +74,15 @@ Somar\Search\ElasticSearchService:
 
 ## Search fields
 
-You can change the default search fields and its weightings in config file:
+You can change the default search fields and its weightings in config file, optionally you can define highlighting matches in matched fields:
 
 ```yaml
 Somar\Search\ElasticSearchService:
   searchFields:
     - title^2
     - keywords^2.5
+    - content
+  highlightFields:
     - content
 ```
 

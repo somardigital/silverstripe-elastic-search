@@ -11,7 +11,7 @@
               <a class="search-results__details--title" :href="result.url">
                 <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
               </a>
-              <p class="search-results__summary">{{ result.summary }}</p>
+              <p class="search-results__summary" v-html="result.summary"></p>
               <div class="d-flex">
                 <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-sm-none">
                   <img :src="result.thumbnailURL" :alt="result.title" />

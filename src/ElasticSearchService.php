@@ -2,10 +2,10 @@
 
 namespace Somar\Search;
 
+use Exception;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Elasticsearch\ClientBuilder;
-use Exception;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injector;
@@ -184,8 +184,9 @@ class ElasticSearchService
         ];
 
         if (!empty($params['term'])) {
-            // make sure that no field is there twice as a result of merging yml
             $fields = [];
+
+            // make sure that no field is there twice as a result of merging yml
             $searchFields = array_filter($this->config()->searchFields, function ($field) use (&$fields) {
                 $field = explode('^', $field)[0];
                 if (!in_array($field, $fields)) {
@@ -247,6 +248,13 @@ class ElasticSearchService
 
         if (!empty($params['offset'])) {
             $body['offset'] = $params['offset'];
+        }
+
+        if ($highlightFields = $this->config()->highlightFields) {
+            $body['highlight'] = [
+                'fragment_size' => 150,
+                'fields' => array_combine($highlightFields, array_fill(0, count($highlightFields), ['type' => 'unified']))
+            ];
         }
 
         $this->extend('updateSearchRequestBody', $body);
