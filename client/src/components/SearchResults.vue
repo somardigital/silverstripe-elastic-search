@@ -11,7 +11,10 @@
               <a class="search-results__details--title" :href="result.url">
                 <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
               </a>
-              <p class="search-results__summary" v-html="result.summary"></p>
+              <div class="search-results__content">
+                <p class="search-results__summary" v-html="result.summary"></p>
+                <div class="search-results__extra-content" v-if="result.extraContent" v-html="result.extraContent" />
+              </div>
               <div class="d-flex">
                 <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-sm-none">
                   <img :src="result.thumbnailURL" :alt="result.title" />
@@ -22,7 +25,7 @@
                   </a>
                   <a v-else :href="result.url" class="search-results__url">
                     <template v-if="config.labels.resultLinkText">
-                      {{ config.labels.resultLinkText }}
+                      {{ config.labels.resultLinkText }}<i class="search-results__url-icon" aria-hidden="true"></i>
                     </template>
                     <template v-else>
                       {{ result.url | addHost }}
