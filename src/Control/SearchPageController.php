@@ -212,6 +212,9 @@ class SearchPageController extends PageController
     {
         $searchConfig = SearchPage::config()->get('searchConfig');
 
+        // to allow dynamically defined options
+        $this->extend('updateSearchConfig', $searchConfig);
+
         if ($this->SearchType) {
             $searchTypeConfig = SearchPage::config()->searchTypes[$this->SearchType];
             $searchConfig = array_replace_recursive($searchConfig, $searchTypeConfig);
@@ -249,7 +252,12 @@ class SearchPageController extends PageController
 
             return !empty($options) ? [
                 'name' => $filterName,
-                'placeholder' => $config['placeholder'],
+                'label' => $config['label'] ?? '',
+                'iconClass' => $config['iconClass'] ?? '',
+                'placeholder' => $config['placeholder'] ?? '',
+                'columns' => $config['columns'] ?? 6,
+                'showInline' => $config['showInline'] ?? false,
+                'default' => $config['default'] ?? null,
                 'options' => $options
             ] : null;
         };
@@ -265,11 +273,13 @@ class SearchPageController extends PageController
         }
 
         $config = [
+            'headingLevel' => $searchConfig['headingLevel'] ?? 2,
             'labels' => $searchConfig['labels'],
             'placeholder' => $searchConfig['placeholder'] ?? '',
             'filters' => $filters,
             'allowEmptyKeyword' => $searchConfig['allowEmptyKeyword'],
             'icons' => $searchConfig['icons'],
+            'caretIconClass' => $searchConfig['caretIconClass'] ?? '',
         ];
 
         if (!empty($searchConfig['date'])) {

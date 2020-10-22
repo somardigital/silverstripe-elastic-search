@@ -1,17 +1,22 @@
 <template>
   <div class="search__header">
-    <h2 v-if="searchedKeyword && !loadingResults">{{ resultsCount }} results found for ‘{{ searchedKeyword }}’</h2>
-    <h2 v-else-if="keyword">Searching for ‘{{ keyword }}’ ...</h2>
-    <h2 v-else>{{ config.labels.title }}</h2>
+    <div class="search__heading">
+      <div class="search__heading-inner">
+        <search-heading class="search__title" v-html="title" />
+        <span class="search__subtitle" v-if="subtitle" v-html="subtitle" />
+      </div>
+    </div>
     <div class="search__keyword">
-      <input
-        type="search"
-        class="search__input"
-        v-model="keyword"
-        @input="onKeywordChange"
-        :placeholder="searchPlaceholder"
-      />
-      <i v-if="config.icons == 'material'" aria-hidden="true" class="material-icons text-primary">search</i>
+      <div class="search__keyword-inner">
+        <input
+          type="search"
+          class="search__input"
+          v-model="keyword"
+          @input="onKeywordChange"
+          :placeholder="searchPlaceholder"
+        />
+        <i v-if="config.icons == 'material'" aria-hidden="true" class="material-icons text-primary">search</i>
+      </div>
     </div>
     <a
       v-if="config.secondarySearch"
@@ -19,82 +24,116 @@
       class="search__secondary-link btn btn-outline-primary btn-round"
       >{{ config.secondarySearch.title }}</a
     >
-
     <div class="search__filters">
-      <h3 class="search__hint">{{ config.labels.filtersHint }}</h3>
-      <div class="row">
-        <div v-for="(filterConfig, i) in config.filters" class="col-md-6" :key="filterConfig.name">
-          <multiselect
-            :class="{ 'multiselect--multiple': filterConfig.multiple }"
-            :key="i"
-            v-model="filters[filterConfig.name]"
-            track-by="value"
-            label="name"
-            role="button"
-            aria-expanded="false"
-            :aria-controls="`multi-filter-${filterConfig.name}`"
-            :max-height="400"
-            :placeholder="filterConfig.placeholder"
-            :options="filterConfig.options"
-            :multiple="filterConfig.multiple"
-            :searchable="false"
-            :aria-label="filterConfig.placeholder"
-            @keydown.native.space="keySpaceDown($event, $refs.filterSelect[i])"
-            @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
-            @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
-            @keydown.native.down="keyArrowDown($refs.filterSelect[i])"
-            @input="onFilterChange"
-            @close="onCloseFilterSelect"
-            @open="addMultiSelectOverlay($refs.filterSelect[i])"
-            ref="filterSelect"
+      <div class="search__filters-inner">
+        <h3 v-if="config.labels.filtersHint" class="search__hint">{{ config.labels.filtersHint }}</h3>
+        <div class="row search__filters-row">
+          <div
+            v-for="(filterConfig, i) in config.filters"
+            :class="['col-md-6', `col-lg-${filterConfig.columns}`, 'search__filter']"
+            :key="filterConfig.name"
           >
-            <template slot="tag" slot-scope="{ option, remove }">
-              <span class="multiselect__tag">
-                {{ option.name }}
-                <button class="multiselect__tag-remove" @click="remove(option)">
-                  <i v-if="config.icons == 'material'" class="material-icons">close</i>
-                  <span v-else>x</span>
-                </button>
-              </span>
-            </template>
-          </multiselect>
-        </div>
-        <div class="col-md-6" v-if="config.date">
-          <multiselect
-            v-model="dateFilter"
-            track-by="value"
-            label="name"
-            placeholder="By date"
-            :aria-label="`By date`"
-            role="button"
-            aria-expanded="false"
-            aria-controls="multi-filter-by-date"
-            :max-height="400"
-            :options="config.date.options"
-            :searchable="false"
-            @keydown.native.space="keySpaceDown($event, $refs.dateSelect)"
-            @keydown.native.tab="keyTabDown($event, $refs.dateSelect)"
-            @keydown.native.up="keyArrowUp($refs.dateSelect)"
-            @keydown.native.down="keyArrowDown($refs.dateSelect)"
-            @input="onDateFilterChange"
-            @close="onCloseDateSelect"
-            @open="addMultiSelectOverlay($refs.dateSelect)"
-            ref="dateSelect"
-          >
-          </multiselect>
+            <label v-if="filterConfig.label" class="search__filter-label">{{ filterConfig.label }}</label>
+            <multiselect
+              v-if="!filterConfig.showInline"
+              :class="[{ 'multiselect--multiple': filterConfig.multiple }, `filter-${filterConfig.name}`]"
+              :key="i"
+              v-model="filters[filterConfig.name]"
+              track-by="value"
+              label="name"
+              role="button"
+              aria-expanded="false"
+              :aria-controls="`multi-filter-${filterConfig.name}`"
+              :max-height="400"
+              :placeholder="filterConfig.placeholder"
+              :options="filterConfig.options"
+              :multiple="filterConfig.multiple"
+              :searchable="filterConfig.searchable"
+              :aria-label="filterConfig.label || filterConfig.placeholder"
+              @keydown.native.space="keySpaceDown($event, $refs.filterSelect[i])"
+              @keydown.native.tab="keyTabDown($event, $refs.filterSelect[i])"
+              @keydown.native.up="keyArrowUp($refs.filterSelect[i])"
+              @keydown.native.down="keyArrowDown($refs.filterSelect[i])"
+              @input="onFilterChange"
+              @close="onCloseFilterSelect($refs[filterConfig.name][0])"
+              @open="addMultiSelectOverlay($refs[filterConfig.name][0])"
+              :ref="filterConfig.name"
+            >
+              <template slot="clear" v-if="filterConfig.iconClass">
+                <i class="multiselect__icon" :class="filterConfig.iconClass" aria-hidden="true"></i>
+              </template>
 
-          <div v-if="dateFilter && dateFilter.value == 'range'" class="search__dates row">
-            <div class="col-sm-4">
-              <label class="search__date search__date-from">
-                Date From
-                <input type="date" v-model="dateFrom" @input="search" />
-              </label>
-            </div>
-            <div class="col-sm-4">
-              <label class="search__date search__date-to">
-                Date To
-                <input type="date" v-model="dateTo" @input="search" />
-              </label>
+              <template slot="caret" v-if="config.caretIconClass">
+                <i
+                  class="multiselect__icon multiselect__icon--caret"
+                  :class="config.caretIconClass"
+                  aria-hidden="true"
+                ></i>
+              </template>
+
+              <template slot="tag" slot-scope="{ option, remove }">
+                <span class="multiselect__tag">
+                  {{ option.name }}
+                  <button class="multiselect__tag-remove" @click="remove(option)">
+                    <i v-if="config.icons == 'material'" class="material-icons">close</i>
+                    <span v-else>x</span>
+                  </button>
+                </span>
+              </template>
+            </multiselect>
+            <template v-else>
+              <ul class="inline-filter">
+                <li v-for="{ name, value } in filterConfig.options" :key="name" class="inline-filter__option">
+                  <button
+                    class="inline-filter__button"
+                    :class="{ 'inline-filter__button--active': isFilterOptionActive(filterConfig.name, value) }"
+                    @click="changeFilter(filterConfig.name, name, value)"
+                    :data-text="name"
+                  >
+                    {{ name }}
+                  </button>
+                </li>
+              </ul>
+            </template>
+          </div>
+          <div :class="['col-md-6', `col-lg-${config.date.columns}`, 'search__filter']" v-if="config.date">
+            <label v-if="config.date.label" class="search__filter-label">{{ config.date.label }}</label>
+            <multiselect
+              v-model="dateFilter"
+              track-by="value"
+              label="name"
+              :placeholder="config.date.placeholder"
+              :aria-label="config.date.label || config.date.placeholder"
+              role="button"
+              aria-expanded="false"
+              aria-controls="multi-filter-by-date"
+              :max-height="400"
+              :options="config.date.options"
+              :searchable="false"
+              @keydown.native.space="keySpaceDown($event, $refs.dateSelect)"
+              @keydown.native.tab="keyTabDown($event, $refs.dateSelect)"
+              @keydown.native.up="keyArrowUp($refs.dateSelect)"
+              @keydown.native.down="keyArrowDown($refs.dateSelect)"
+              @input="onDateFilterChange"
+              @close="onCloseFilterSelect($refs.dateSelect)"
+              @open="addMultiSelectOverlay($refs.dateSelect)"
+              ref="dateSelect"
+            >
+            </multiselect>
+
+            <div v-if="dateFilter && dateFilter.value == 'range'" class="search__dates row">
+              <div class="col-sm-4">
+                <label class="search__date search__date-from">
+                  Date From
+                  <input type="date" v-model="dateFrom" @input="search" />
+                </label>
+              </div>
+              <div class="col-sm-4">
+                <label class="search__date search__date-to">
+                  Date To
+                  <input type="date" v-model="dateTo" @input="search" />
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -104,8 +143,14 @@
 </template>
 
 <script>
-import { searchConfig, debounce, buildSearchQueryString } from "@/utils"
+import { searchConfig, debounce, buildSearchQueryString, escapeRegExp } from "@/utils"
 import Multiselect from "vue-multiselect"
+
+const SearchHeading = {
+  render(h) {
+    return h(`h${searchConfig.headingLevel}`, this.$slots.default)
+  },
+}
 
 export default {
   props: {
@@ -115,6 +160,7 @@ export default {
 
   components: {
     Multiselect,
+    SearchHeading,
   },
 
   data() {
@@ -142,8 +188,14 @@ export default {
     searchParams: function() {
       const filters = {}
       this.config.filters.forEach(filter => {
-        if (this.filters[filter.name]) {
-          filters[filter.name] = this.filters[filter.name].map(option => option.value)
+        let filterValues = this.filters[filter.name]
+        if (filterValues) {
+          // in case of non-multiple filters
+          if (!Array.isArray(filterValues)) {
+            filterValues = [filterValues]
+          }
+
+          filters[filter.name] = filterValues.map(option => option.value)
         }
       })
 
@@ -167,6 +219,26 @@ export default {
     },
     searchPlaceholder: function() {
       return this.config.placeholder || ""
+    },
+
+    title() {
+      let title = this.config.labels.title
+
+      if (this.searchedKeyword && !this.loadingResults) {
+        title = this.config.labels.titleFound
+      } else if (this.keyword) {
+        title = this.config.labels.titleSearching
+      }
+
+      return this.replacePlaceholders(title)
+    },
+
+    subtitle() {
+      if (this.config.labels.subtitle && this.searchedKeyword && !this.loadingResults) {
+        return this.replacePlaceholders(this.config.labels.subtitle)
+      }
+
+      return ""
     },
   },
 
@@ -264,6 +336,10 @@ export default {
         activeFilters[filter.name] = filter.options.filter(option => {
           return params.getAll(`${filter.name}[]`).includes(option.value)
         })
+
+        if (filter.default && !activeFilters[filter.name].length) {
+          activeFilters[filter.name] = filter.options.find(option => option.value == filter.default)
+        }
       })
       this.filters = activeFilters
 
@@ -309,6 +385,33 @@ export default {
       }
 
       this.$emit("search", this.searchParams)
+    },
+
+    changeFilter(filter, name, value) {
+      this.filters[filter] = { name, value }
+      this.onFilterChange()
+    },
+
+    isFilterOptionActive(filter, value) {
+      const filterValues = Array.isArray(this.filters[filter]) ? this.filters[filter] : [this.filters[filter]]
+
+      return !!filterValues.find(filterValue => filterValue.value == value)
+    },
+
+    replacePlaceholders(string) {
+      const replacements = {
+        "[searchedKeyword]": this.searchedKeyword,
+        "[keyword]": this.keyword,
+        "[resultsCount]": this.resultsCount,
+      }
+
+      const placeholders = Object.keys(replacements)
+        .map(placeholder => escapeRegExp(placeholder))
+        .join("|")
+
+      const regExp = new RegExp(placeholders, "gi")
+
+      return string.replace(regExp, match => replacements[match])
     },
 
     /**
@@ -369,26 +472,9 @@ export default {
       }
     },
 
-    onCloseFilterSelect() {
-      if (this.$refs.filterSelect.length) {
-        this.$refs.filterSelect[0].deactivate()
-        this.$refs.filterSelect.forEach(filter => {
-          filter.$el.setAttribute("aria-expanded", "false")
-        })
-      }
-
-      this.removeMultiSelectOverlay()
-    },
-
-    onCloseDateSelect() {
-      if (Array.isArray(this.$refs.dateSelect) && this.$refs.dateSelect.length) {
-        this.$refs.dateSelect[0].deactivate()
-        this.$refs.dateSelect[0].$el.setAttribute("aria-expanded", "false")
-      } else {
-        this.$refs.dateSelect.deactivate()
-        this.$refs.dateSelect.$el.setAttribute("aria-expanded", "false")
-      }
-
+    onCloseFilterSelect(el) {
+      el.deactivate()
+      el.$el.setAttribute("aria-expanded", "false")
       this.removeMultiSelectOverlay()
     },
     /**
@@ -411,6 +497,16 @@ export default {
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   width: 100%;
+}
+
+.multiselect__icon {
+  margin-right: 5px;
+
+  &--caret {
+    margin-right: 0;
+    position: absolute;
+    right: 15px;
+  }
 }
 
 .search {

@@ -1,69 +1,56 @@
 <template>
-  <div v-if="pageResults.length" class="search-results">
-    <ul class="search-results__list">
-      <li v-for="result in pageResults" :key="result.id" class="search-results__item">
-        <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-none d-sm-block">
-          <img :src="result.thumbnailURL" :alt="result.title" />
-        </a>
-        <div class="search-results__details">
-          <a class="search-results__details--title" :href="result.url">
-            <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
-          </a>
-          <p class="search-results__summary">{{ result.summary }}</p>
-          <div class="d-flex">
-            <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-sm-none">
+  <div class="search-results">
+    <div class="search-results-inner">
+      <template v-if="pageResults.length">
+        <ul class="search-results__list">
+          <li v-for="result in pageResults" :key="result.id" class="search-results__item">
+            <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-none d-sm-block">
               <img :src="result.thumbnailURL" :alt="result.title" />
             </a>
-            <div class="search-results__meta">
-              <a v-if="result.fileURL" :href="result.fileURL" class="search-results__url" target="_blank">
-                Download now <span v-if="result.fileMetaData">{{ result.fileMetaData }}</span>
+            <div class="search-results__details">
+              <a class="search-results__details--title" :href="result.url">
+                <h2 :class="['search-results__title', 'type-' + result.type]">{{ result.title }}</h2>
               </a>
-              <a v-else :href="result.url" class="search-results__url">{{ result.url | addHost }}</a>
-              <span v-if="result.dateString !== false" class="search-results__date">
-                <template v-if="result.dateString">{{ result.dateString }}</template>
-                <template v-else>Updated {{ result.date | dateFormat }}</template>
-              </span>
+              <p class="search-results__summary">{{ result.summary }}</p>
+              <div class="d-flex">
+                <a v-if="result.thumbnailURL" :href="result.url" class="search-results__thumbnail d-sm-none">
+                  <img :src="result.thumbnailURL" :alt="result.title" />
+                </a>
+                <div class="search-results__meta">
+                  <a v-if="result.fileURL" :href="result.fileURL" class="search-results__url" target="_blank">
+                    Download now <span v-if="result.fileMetaData">{{ result.fileMetaData }}</span>
+                  </a>
+                  <a v-else :href="result.url" class="search-results__url">
+                    <template v-if="config.labels.resultLinkText">
+                      {{ config.labels.resultLinkText }}
+                    </template>
+                    <template v-else>
+                      {{ result.url | addHost }}
+                    </template>
+                  </a>
+                  <span v-if="result.dateString !== false" class="search-results__date">
+                    <template v-if="result.dateString">{{ result.dateString }}</template>
+                    <template v-else>Updated {{ result.date | dateFormat }}</template>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </li>
-    </ul>
-    <nav aria-label="Search results pages">
-      <ul class="pagination">
-        <li v-if="currentPage > 1" class="pagination__prev">
-          <a @click.prevent="currentPage--" href="#" class="btn btn-round btn-outline-primary btn-arrow-back"
-            >Previous
-          </a>
-        </li>
-        <li
-          v-for="page in pageCount"
-          :key="page"
-          class="pagination__page"
-          :class="{
-            'pagination__page--active': currentPage == page,
-            'pagination__page--first': page == 1,
-            'pagination__page--last': page == pageCount,
-          }"
-        >
-          <a
-            @click.prevent="changePage(page)"
-            href="#"
-            class="btn btn-circle btn-outline-primary"
-            :class="{ active: currentPage == page }"
-            >{{ page }}
-          </a>
-        </li>
-        <li v-if="currentPage < pageCount" class="pagination__next">
-          <a @click.prevent="currentPage++" href="#" class="btn btn-round btn-outline-primary btn-arrow">Next </a>
-        </li>
-      </ul>
-    </nav>
+          </li>
+        </ul>
+        <pagination :currentPage="currentPage" :pageCount="pageCount" :page.sync="currentPage" />
+      </template>
+      <template v-else>
+        <h1 v-if="errorMessage" class="search-results__message search-results__message--error">{{ errorMessage }}</h1>
+        <h1 v-else class="search-results__message">No results found</h1>
+      </template>
+    </div>
   </div>
-  <h1 v-else-if="errorMessage" class="search-results__message search-results__message--error">{{ errorMessage }}</h1>
-  <h1 v-else class="search-results__message">No results found</h1>
 </template>
 
 <script>
+import Pagination from "./Pagination"
+import { searchConfig } from "@/utils"
+
 export default {
   props: {
     errorMessage: String,
@@ -73,8 +60,10 @@ export default {
       default: 10,
     },
   },
+  components: { Pagination },
   data() {
     return {
+      config: searchConfig,
       currentPage: 1,
     }
   },
@@ -147,15 +136,6 @@ export default {
   &__meta {
     display: flex;
     flex-direction: column;
-  }
-}
-.pagination {
-  list-style-type: none;
-  margin-bottom: 0;
-  margin-top: 20px;
-  padding: 0;
-  li {
-    display: inline-block;
   }
 }
 </style>

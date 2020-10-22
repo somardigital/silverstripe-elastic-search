@@ -91,17 +91,28 @@ On the Search page you will find a Vue component that is configurable via .yml f
 ```yaml
 Somar\Search\PageType\SearchPage:
   searchConfig:
+    headingLevel: 1
     allowEmptyKeyword: false
     secondarySearch: documents
     icons: material # adds material icon into the keyword field & dropdown tag close
+    caretIconClass: "icon-dropdown" # adds <i class="icon-dropdown"> to dropdowns
     labels:
-      title: Start typing to search the content
+      title: Start typing to search the content # all title fields & subtitle can have placeholders and html
+      titleFound: "Search results for <b>“[searchedKeyword]”</b>"
+      titleSearching: "Searching for <b>“[keyword]”</b> ..."
+      subtitle: "[resultsCount] results found"
+      resultLinkText: Read more # uses URL of the result when not defined
       filtersHint: Refine your search results below by selecting popular filters and/or ordering them by date.
     filters:
       type:
       placeholder: Type of content
       field: type
+      columns: 4 # width out of 12 columns on desktop, defaults to 6, set to 6 on tablet & 12 on mobile
       multiple: true # allows multiple values selected
+      showInline: true # display all options inline rather than in dropdown
+      default: news # preselected filter
+      searchable: false
+      iconClass: icon-type # adds <i class="icon-type"> to dropdowns
       options:
         news:
           name: News

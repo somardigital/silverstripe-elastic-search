@@ -71,3 +71,5 @@ export const buildSearchQueryString = params => {
 
   return queryParams.length ? `?${queryParams.join("&")}` : ``
 }
+
+export const escapeRegExp = str => str.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")

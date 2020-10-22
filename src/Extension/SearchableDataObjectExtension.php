@@ -9,17 +9,18 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DatetimeField;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
-use SilverStripe\Core\Convert;
 
 use Ramsey\Uuid\Uuid;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Forms\TextField;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\Parsers\ShortcodeParser;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
+use Somar\Search\Utils\Helpers;
 
 /**
  * Allow a DataObject to be indexed in Elastic.
@@ -136,20 +137,15 @@ class SearchableDataObjectExtension extends DataExtension
         ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
 
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
-            $content = '';
-            foreach ($this->owner->ElementalArea->Elements() as $element) {
-                if ($element->isSerachable()) {
-                    $content .= strip_tags($element->forTemplate());
-                }
-            }
-
-            // Strip line breaks from elemental markup
-            $content = str_replace("\n", " ", $content);
-            // Decode HTML entities back to plain text
-            return trim(Convert::xml2raw($content));
+            return Helpers::get_blocks_plain_content($this->owner->getSearchableBlocks()->toArray());
         } else {
             return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
         }
+    }
+
+    public function getSearchableBlocks(): ArrayList
+    {
+        return $this->owner->ElementalArea->Elements()->filterByCallback(fn ($block) => $block->isSearchable());
     }
 
     /**
