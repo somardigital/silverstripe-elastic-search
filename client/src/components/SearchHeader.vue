@@ -30,7 +30,7 @@
         <div class="row search__filters-row">
           <div
             v-for="(filterConfig, i) in config.filters"
-            :class="['col-md-6', `col-lg-${filterConfig.columns}`, 'search__filter']"
+            :class="['col-md-6', `col-xl-${filterConfig.columns}`, 'search__filter']"
             :key="filterConfig.name"
           >
             <label v-if="filterConfig.label" class="search__filter-label">{{ filterConfig.label }}</label>
