@@ -189,6 +189,12 @@ class SearchableDataObjectExtension extends DataExtension
                 $this->updateSearchIndex();
             }
         }
+
+        if ($this->owner->hasField('ShowInSearch') && $this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
+            if (!$this->owner->has_extension(Versioned::class)) {
+                $this->removeFromIndex();
+            }
+        }
     }
 
 
@@ -196,6 +202,10 @@ class SearchableDataObjectExtension extends DataExtension
     {
         if ($this->isIndexed() && false !== $this->owner->config()->update_index_on_save) {
             $this->updateSearchIndex();
+        }
+
+        if ($this->owner->hasField('ShowInSearch') && $this->owner->isChanged('ShowInSearch') && !$this->owner->ShowInSearch) {
+            $this->removeFromIndex();
         }
     }
 
@@ -252,6 +262,6 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function isIndexed()
     {
-        return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing);
+        return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing || ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch));
     }
 }
