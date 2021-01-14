@@ -175,8 +175,11 @@ export default {
         }
       })
 
-      const dateFilter = filters.date[0] || null
-      delete filters.date
+      const dateFilter = null
+      if (filters.date) {
+        dateFilter = filters.date[0]
+        delete filters.date
+      }
 
       return {
         q: this.keyword,
