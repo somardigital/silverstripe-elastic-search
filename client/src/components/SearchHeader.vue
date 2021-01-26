@@ -175,7 +175,7 @@ export default {
         }
       })
 
-      const dateFilter = null
+      let dateFilter = null
       if (filters.date) {
         dateFilter = filters.date[0]
         delete filters.date
