@@ -16,10 +16,10 @@ class Helpers
     {
         $content = array_reduce($blocks, fn ($str, $block) => $str .= $block->forTemplate(), '');
 
-        // Strip line breaks from elemental markup
-        $content = str_replace("\n", " ", $content);
+        // Strip line breaks & multiple spaces from elemental markup
+        $content = preg_replace('!\s+!', ' ', $content);
 
-        // Decode HTML entities back to plain text
-        return trim(Convert::xml2raw($content));
+        // Strip HTML tags, decode HTML entities back to plain text & trim whitespaces
+        return trim(html_entity_decode(strip_tags($content), ENT_QUOTES, 'UTF-8'));
     }
 }
