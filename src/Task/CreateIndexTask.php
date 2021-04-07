@@ -21,14 +21,14 @@ class CreateIndexTask extends BuildTask
         if ($created) {
             DB::alteration_message("Created index $index");
 
-            DB::alteration_message("Setting mappings on index $index...");
-            $service->setIndexMappings();
-
             DB::alteration_message("Creating attachment pipeline for $index...");
             $service->createAttachmentPipeline();
         } else {
             DB::alteration_message("Index $index already exists");
         }
+
+        DB::alteration_message("Setting mappings on index $index...");
+        $service->setIndexMappings();
 
         DB::alteration_message("Done.");
     }

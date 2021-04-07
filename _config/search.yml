@@ -31,3 +31,7 @@ Somar\Search\ElasticSearchService:
     thumbnail_url:
       type: text
       index: false
+
+  fluentMappingProperties:
+    locale:
+      type: keyword

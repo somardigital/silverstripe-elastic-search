@@ -6,6 +6,7 @@ use Exception;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
 use Elasticsearch\ClientBuilder;
+use Page;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Extensible;
 use SilverStripe\Core\Injector\Injector;
@@ -116,6 +117,12 @@ class ElasticSearchService
     public function setIndexMappings()
     {
         $mappingProperties = $this->config()->mappingProperties;
+
+        $page = singleton(Page::class);
+
+        if ($page->hasExtension('TractorCow\Fluent\Extension\FluentExtension')) {
+            $mappingProperties = array_merge($mappingProperties, $this->config()->fluentMappingProperties);
+        }
 
         $this->extend('updateMappingProperties', $mappingProperties);
 

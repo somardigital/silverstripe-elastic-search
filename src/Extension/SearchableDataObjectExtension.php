@@ -74,7 +74,9 @@ class SearchableDataObjectExtension extends DataExtension
 
         try {
             $service = new ElasticSearchService();
-            $service->putDocument($this->owner->GUID, $this->owner->searchData());
+
+            $service->putDocument($this->getDocumentID(), $this->owner->searchData());
+
 
             // Update LastIndexed timestamp
             $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
@@ -94,11 +96,22 @@ class SearchableDataObjectExtension extends DataExtension
 
         try {
             $service = new ElasticSearchService();
-            $service->removeDocument($this->owner->GUID);
+            $service->removeDocument($this->getDocumentID());
         } catch (\Exception $e) {
             $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}");
+            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->getDocumentID()}");
         }
+    }
+
+    public function getDocumentID()
+    {
+        if ($this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension')) {
+            if ($locale = $this->getRecordLocale()) {
+                return "{$this->owner->GUID}-{$locale->Locale}";
+            }
+        }
+
+        return $this->owner->GUID;
     }
 
     /**
@@ -121,13 +134,18 @@ class SearchableDataObjectExtension extends DataExtension
         if (method_exists($this->owner, 'Link')) {
             $searchData['url'] = str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link());
         }
+        if (
+            $this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension')
+            && $locale = $this->getRecordLocale()
+        ) {
+            $searchData['locale'] = $locale->Locale;
+        }
 
         if (method_exists($this->owner, 'updateSearchData')) {
             $searchData = $this->owner->updateSearchData($searchData);
         }
 
         $this->owner->extend('updateSearchData', $searchData);
-
 
         return $searchData;
     }
@@ -263,5 +281,24 @@ class SearchableDataObjectExtension extends DataExtension
     public function isIndexed()
     {
         return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing || ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch));
+    }
+
+    /**
+     * Get locale this record was originally queried from, or belongs to
+     *
+     * Copied from Fluent extension as it is not accessible otherwise.
+     *
+     * @return Locale|null
+     */
+    public function getRecordLocale()
+    {
+        $localeCode = $this->owner->getSourceQueryParam('Fluent.Locale');
+        if ($localeCode) {
+            $locale = \TractorCow\Fluent\Model\Locale::getByLocale($localeCode);
+            if ($locale) {
+                return $locale;
+            }
+        }
+        return \TractorCow\Fluent\Model\Locale::getCurrentLocale();
     }
 }
