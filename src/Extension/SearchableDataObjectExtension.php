@@ -77,7 +77,6 @@ class SearchableDataObjectExtension extends DataExtension
 
             $service->putDocument($this->getDocumentID(), $this->owner->searchData());
 
-
             // Update LastIndexed timestamp
             $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
 
@@ -87,7 +86,15 @@ class SearchableDataObjectExtension extends DataExtension
                 SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
             }
         } catch (\Exception $e) {
-            $this->logger()->error("Unable to re-index object. Index {$service->getIndexName()}, ID: {$this->owner->ID}, Title: {$this->owner->Title}, {$e->getMessage()}");
+            $this->logger()->error(
+                sprintf(
+                    "Unable to re-index object. %s %s %s %s",
+                    isset($service) ? "Index {$service->getIndexName()}," : '',
+                    "ID: {$this->owner->ID},",
+                    "Title: {$this->owner->Title},",
+                    $e->getMessage()
+                )
+            );
         }
     }
 
