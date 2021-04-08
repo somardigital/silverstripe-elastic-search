@@ -11,7 +11,6 @@ use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 
 use Ramsey\Uuid\Uuid;
-use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\ArrayList;
@@ -28,6 +27,8 @@ use Somar\Search\Utils\Helpers;
  */
 class SearchableDataObjectExtension extends DataExtension
 {
+    use FluentTrait;
+
     private static $db = [
         'LastIndexed' => 'Datetime',
         'GUID' => 'Varchar(40)',
@@ -142,12 +143,8 @@ class SearchableDataObjectExtension extends DataExtension
         if (method_exists($this->owner, 'Link')) {
             $searchData['url'] = str_replace(['?stage=Stage', '?stage=Live'], '', $this->owner->Link());
         }
-        if (
-            $this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension')
-            && $locale = $this->getRecordLocale()
-        ) {
-            $searchData['locale'] = $locale->Locale;
-        }
+
+        $this->updateSearchDataFluent($searchData);
 
         if (method_exists($this->owner, 'updateSearchData')) {
             $searchData = $this->owner->updateSearchData($searchData);
@@ -292,26 +289,6 @@ class SearchableDataObjectExtension extends DataExtension
     {
         return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing || ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch));
     }
-
-    /**
-     * Get locale this record was originally queried from, or belongs to
-     *
-     * Copied from Fluent extension as it is not accessible otherwise.
-     *
-     * @return Locale|null
-     */
-    public function getRecordLocale()
-    {
-        $localeCode = $this->owner->getSourceQueryParam('Fluent.Locale');
-        if ($localeCode) {
-            $locale = \TractorCow\Fluent\Model\Locale::getByLocale($localeCode);
-            if ($locale) {
-                return $locale;
-            }
-        }
-        return \TractorCow\Fluent\Model\Locale::getCurrentLocale();
-    }
-
 
     /**
      * Get a class that this extension was applied to
