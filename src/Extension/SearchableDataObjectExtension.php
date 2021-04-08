@@ -12,6 +12,7 @@ use SilverStripe\ORM\FieldType\DBField;
 
 use Ramsey\Uuid\Uuid;
 use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
@@ -78,7 +79,7 @@ class SearchableDataObjectExtension extends DataExtension
             $service->putDocument($this->getDocumentID(), $this->owner->searchData());
 
             // Update LastIndexed timestamp
-            $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
+            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
 
             SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
 
@@ -186,7 +187,7 @@ class SearchableDataObjectExtension extends DataExtension
             $data = ['GUID' => $this->owner->GUID];
             $where = ['ID' => $this->owner->ID];
 
-            $table = DataObject::getSchema()->tableName(is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName);
+            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
             SQLUpdate::create($table, $data, $where)->execute();
 
             if ($this->owner->has_extension(Versioned::class)) {
@@ -275,7 +276,9 @@ class SearchableDataObjectExtension extends DataExtension
     {
         $this->owner->LastEdited = DBDatetime::now()->Rfc2822();
 
-        $table = DataObject::getSchema()->tableName(is_a($this->owner, SiteTree::class) ? SiteTree::class : $this->owner->ClassName);
+        $baseClass = DataObject::getSchema()->baseDataClass($this->owner->ClassName);
+
+        $table = DataObject::getSchema()->tableName($baseClass);
         $data = ['LastEdited' => $this->owner->LastEdited];
         $where = ['ID' => $this->owner->ID];
 
@@ -307,5 +310,27 @@ class SearchableDataObjectExtension extends DataExtension
             }
         }
         return \TractorCow\Fluent\Model\Locale::getCurrentLocale();
+    }
+
+
+    /**
+     * Get a class that this extension was applied to
+     *
+     * @return string
+     */
+    protected function getAppliedClass(): string
+    {
+        // Get starting class - with a shortcut for Page class
+        $class = is_a($this->owner, Page::class) ? Page::class : $this->owner->ClassName;
+
+        // Find Class that has the extensions applied
+        $isDirectExtension = fn ($c) => in_array(static::class, Config::forClass($c)->uninherited('extensions'));
+
+        // $class might eventually be false when there is no more parent classes
+        while ($class && !$isDirectExtension($class)) {
+            $class = get_parent_class($class);
+        }
+
+        return $class ?? '';
     }
 }
