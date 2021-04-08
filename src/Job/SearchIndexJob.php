@@ -34,7 +34,7 @@ class SearchIndexJob extends AbstractQueuedJob
         $this->records = $this->recordsToIndex();
 
         $this->currentStep = 0;
-        $this->totalSteps = array_reduce($this->records, function($sum, $list) {
+        $this->totalSteps = array_reduce($this->records, function ($sum, $list) {
             return $sum + $list['count'];
         }, 0);
         $this->complete = false;
@@ -121,17 +121,51 @@ class SearchIndexJob extends AbstractQueuedJob
         $original_stage = Versioned::get_stage();
         Versioned::set_stage(Versioned::LIVE);
 
-        $records[] = [
-            'list' => Page::get(),
-            'count' => Page::get()->count()
-        ];
+        if (DataObject::has_extension(Page::class, 'TractorCow\Fluent\Extension\FluentExtension')) {
+            $locales = singleton(Page::class)->Locales()->toArray();
+
+            array_walk($locales, function ($locale) use (&$records) {
+                \TractorCow\Fluent\State\FluentState::singleton()->withState(
+                    function (\TractorCow\Fluent\State\FluentState $state) use ($locale, &$records) {
+                        $state->setLocale($locale->Locale);
+                        $records[] = [
+                            'list' => Page::get(),
+                            'count' => Page::get()->count()
+                        ];
+                    }
+                );
+            });
+        } else {
+            $records[] = [
+                'list' => Page::get(),
+                'count' => Page::get()->count()
+            ];
+        }
+
+
 
         if (!empty($this->config()->IndexedClasses)) {
             foreach ($this->config()->IndexedClasses as $class) {
-                $records[] = [
-                    'list' =>  DataObject::get($class),
-                    'count' => DataObject::get($class)->count()
-                ];
+                if (DataObject::has_extension($class, 'TractorCow\Fluent\Extension\FluentExtension')) {
+                    $locales = singleton($class)->Locales()->toArray();
+
+                    array_walk($locales, function ($locale) use ($class, &$records) {
+                        \TractorCow\Fluent\State\FluentState::singleton()->withState(
+                            function (\TractorCow\Fluent\State\FluentState $state) use ($locale, $class, &$records) {
+                                $state->setLocale($locale->Locale);
+                                $records[] = [
+                                    'list' =>  DataObject::get($class),
+                                    'count' => DataObject::get($class)->count()
+                                ];
+                            }
+                        );
+                    });
+                } else {
+                    $records[] = [
+                        'list' =>  DataObject::get($class),
+                        'count' => DataObject::get($class)->count()
+                    ];
+                }
             }
         }
 
