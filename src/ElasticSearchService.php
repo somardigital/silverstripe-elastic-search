@@ -257,6 +257,11 @@ class ElasticSearchService
             $body['offset'] = $params['offset'];
         }
 
+        if (class_exists('TractorCow\\Fluent\\Model\\Locale')) {
+            $locale = \TractorCow\Fluent\Model\Locale::getCurrentLocale();
+            $body['query']['bool']['filter'][] = ['term' => ['locale' => $locale->Locale]];
+        }
+
         if ($highlightFields = $this->config()->highlightFields) {
             $body['highlight'] = [
                 'fragment_size' => 150,
