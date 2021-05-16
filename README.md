@@ -11,22 +11,7 @@ Silverstripe module to provide site-wide content search with elasticsearch
 
 ## Installation
 
-1. Add private repo to the `composer.json`:
-
-```
-...
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@bitbucket.org:somardesignstudios/silverstripe-elastic-search.git"
-        }
-    ]
-}
-...
-```
-
-2. Install the module
+1. Install the module
 
 ```
 composer require somardesignstudios/silverstripe-elastic-search
@@ -58,7 +43,7 @@ You can add additional fields by adding a `search.yml` config to your own projec
 
 ```yaml
 ---
-Name: gwrc_search
+Name: my_search
 After:
   - "#somar_search"
 ---
@@ -118,19 +103,19 @@ Somar\Search\PageType\SearchPage:
       options:
         news:
           name: News
-          filter: GWRC\Website\PageType\NewsArticle
+          filter: App\Page\NewsArticle
         events:
           name: Events
-          filter: GWRC\Website\PageType\Event
+          filter: App\Page\Event
         content:
           name: Content
           filter:not:
-            - GWRC\Website\PageType\NewsArticle
-            - GWRC\Website\PageType\Event
-            - GWRC\Website\Model\DocumentLibrary\Document
+            - App\Page\NewsArticle
+            - App\Page\Event
+            - App\Model\Document
         documents:
           name: Documents
-          filter: GWRC\Website\Model\DocumentLibrary\Document
+          filter: App\Model\Document
       date:
         placeholder: By date
         field: sort_date
@@ -162,17 +147,17 @@ Somar\Search\PageType\SearchPage:
           placeholder: Topics
           field: topics
           multiple: true
-          tag: GWRC\Website\Model\DocumentLibrary\DocumentTopic
+          tag: App\Model\Topic
         categories:
           placeholder: Categories
           field: categories
           multiple: true
-          tag: GWRC\Website\Model\DocumentLibrary\DocumentCategory
+          tag: App\Model\Category
         regions:
           placeholder: Regions
           field: regions
           multiple: true
-          tag: GWRC\Website\Model\DocumentLibrary\DocumentRegion
+          tag: App\Model\Region
         date:
           field: published
 ```
@@ -186,5 +171,5 @@ When the index is created, use `SearchIndexJob` to index the site content (objec
 ```yml
 Somar\Search\Job\SearchIndexJob:
   IndexedClasses:
-    - GWRC\Website\Model\DocumentLibrary\Document
+    - App\Model\Document
 ```

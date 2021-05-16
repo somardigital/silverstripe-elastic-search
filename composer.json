@@ -2,6 +2,13 @@
     "name": "somardesignstudios/silverstripe-elastic-search",
     "description": "A silverstripe module providing search with elasticsearch",
     "type": "silverstripe-vendormodule",
+    "keywords": [
+        "silverstripe",
+        "elasticsearch",
+        "search",
+        "full text search"
+    ],
+    "license": "BSD-3-Clause",
     "require": {
         "php": ">=7.1.0",
         "elasticsearch/elasticsearch": "^7.6",
@@ -21,5 +28,7 @@
         "expose": [
             "client/dist"
         ]
-    }
+    },
+    "prefer-stable": true,
+    "minimum-stability": "dev"
 }
