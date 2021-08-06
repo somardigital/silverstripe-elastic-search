@@ -25,9 +25,11 @@ class SearchableElementExtension extends DataExtension
             && $element->isSearchable()
             && $parentPage = $this->getParentPage()
         ) {
-            // Update last edited before indexing
-            $parentPage->updateLastEdited();
-            $parentPage->updateSearchIndex();
+            if ($parentPage->updateIndexOnSave()) {
+                // Update last edited before indexing
+                $parentPage->updateLastEdited();
+                $parentPage->updateSearchIndex();
+            }
         }
     }
 
@@ -35,9 +37,11 @@ class SearchableElementExtension extends DataExtension
     {
         $element = $this->owner;
         if ($element->isSearchable() && $parentPage = $this->getParentPage()) {
-            // Update last edited before indexing
-            $parentPage->updateLastEdited();
-            $parentPage->updateSearchIndex();
+            if ($parentPage->updateIndexOnSave()) {
+                // Update last edited before indexing
+                $parentPage->updateLastEdited();
+                $parentPage->updateSearchIndex();
+            }
         }
     }
 
