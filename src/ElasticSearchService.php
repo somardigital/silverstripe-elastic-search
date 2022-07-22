@@ -194,14 +194,14 @@ class ElasticSearchService
             $fields = [];
 
             // make sure that no field is there twice as a result of merging yml
-            $searchFields = array_filter($this->config()->searchFields, function ($field) use (&$fields) {
+            $searchFields = array_values(array_filter($this->config()->searchFields, function ($field) use (&$fields) {
                 $field = explode('^', $field)[0];
                 if (!in_array($field, $fields)) {
                     $fields[] = $field;
                     return true;
                 }
                 return false;
-            });
+            }));
 
             $body['query'] = [
                 'bool' => [
