@@ -47,12 +47,20 @@ class SearchIndexJob extends AbstractQueuedJob
 
     public function process()
     {
+        // this queued job is very likely to drain the allocated memory
+        // so put it to unlimited for now
+        // $curMemoryLimit = ini_get('memory_limit');
+        // ini_set('memory_limit', '-1');
+        
         $this->update($this->config()->limit);
 
         if ($this->currentStep >= $this->totalSteps) {
             $this->messages[] = 'Done.';
             $this->isComplete = true;
         }
+
+        // reset memory limit back to what it was
+        //ini_set('memory_limit', $curMemoryLimit);
     }
 
     private function update($limit)

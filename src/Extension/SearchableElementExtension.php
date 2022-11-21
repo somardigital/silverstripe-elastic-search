@@ -18,45 +18,35 @@ class SearchableElementExtension extends DataExtension
      */
     public function onAfterWrite()
     {
-        $element = $this->owner;
-        // Workaround to detect if this Element has changes that need published
-        if (
-            Versioned::get_stage() == Versioned::LIVE
-            && $element->isSearchable()
-            && $parentPage = $this->getParentPage()
-        ) {
-            if ($parentPage->updateIndexOnSave()) {
-                // Update last edited before indexing
-                $parentPage->updateLastEdited();
-                $parentPage->updateSearchIndex();
-            }
-        }
+        // Nothing, only push to index if published
     }
 
     public function onAfterDelete()
     {
         $element = $this->owner;
+
         if ($element->isSearchable() && $parentPage = $this->getParentPage()) {
-            if ($parentPage->updateIndexOnSave()) {
-                // Update last edited before indexing
-                $parentPage->updateLastEdited();
-                $parentPage->updateSearchIndex();
-            }
+            // Update last edited before indexing
+            $parentPage->updateLastEdited();
+            $parentPage->updateSearchIndex();
         }
     }
 
     /**
-     * TODO: use onAfterPublish to trigger re-index when the below bug is fixed.
-     * BUG: This hook is never called. https://github.com/dnadesign/silverstripe-elemental/issues/779
-     *
-     * @return void
+     *  This is working now: https://github.com/silverstripe/silverstripe-elemental/issues/779
      */
     public function onAfterPublish()
     {
+        $element = $this->owner;
+
+        if ($element->isSearchable() && $parentPage = $this->getParentPage()) {
+            $parentPage->updateLastEdited();
+            $parentPage->updateSearchIndex();
+        }
     }
 
     /**
-     * To fix incorrect behavior when nested elements
+     * To fix incorrect behaviour when nested elements
      *
      */
     public function getParentPage()
