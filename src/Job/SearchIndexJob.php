@@ -65,9 +65,11 @@ class SearchIndexJob extends AbstractQueuedJob
     private function update($limit)
     {
         $service = new ElasticSearchService();
+
         $indexedTypes = array_filter($this->records, function ($i) {
             return $i < $this->currentIndex;
         }, ARRAY_FILTER_USE_KEY);
+
         $indexedTypesCount = array_reduce($indexedTypes, function ($sum, $list) {
             return $sum + $list['count'];
         }, 0);
@@ -104,6 +106,7 @@ class SearchIndexJob extends AbstractQueuedJob
 
         if (!empty($documents)) {
             try {
+                // Push date to Elastic in bulk
                 $result = $service->putDocuments($documents);
 
                 if ($result['errors']) {

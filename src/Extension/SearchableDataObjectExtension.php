@@ -70,6 +70,12 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function updateSearchIndex()
     {
+        // DO NOT index documents that are not LIVE!
+        // Need this check because publishing an Elemental block on this page will trigger this function!
+        if (!$this->owner->isPublished()) {
+            return;
+        }
+        
         if (!$this->owner->GUID) {
             $this->owner->assignGUID();
         }
@@ -267,6 +273,7 @@ class SearchableDataObjectExtension extends DataExtension
 
     /**
      * Remove this object from elastic index.
+     * This is also called when page is UNPUBLISHED.
      */
     public function onAfterDelete()
     {
@@ -308,12 +315,18 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function isIndexed()
     {
-        return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing || ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch));
+        $check = $this->owner->config()->disable_indexing || 
+            $this->owner->DisableIndexing || 
+            ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch);
+
+        return !$check;
     }
 
     public function updateIndexOnSave()
     {
-        return $this->isIndexed() && false !== $this->owner->config()->update_index_on_save;
+        $check = $this->isIndexed() && false !== $this->owner->config()->update_index_on_save;
+
+        return $check;
     }
 
     /**
