@@ -26,7 +26,6 @@ class SearchableElementExtension extends DataExtension
         $element = $this->owner;
 
         if ($element->isSearchable() && $parentPage = $this->getParentPage()) {
-            // Update last edited before indexing
             $parentPage->updateLastEdited();
             $parentPage->updateSearchIndex();
         }
@@ -36,6 +35,16 @@ class SearchableElementExtension extends DataExtension
      *  This is working now: https://github.com/silverstripe/silverstripe-elemental/issues/779
      */
     public function onAfterPublish()
+    {
+        $element = $this->owner;
+
+        if ($element->isSearchable() && $parentPage = $this->getParentPage()) {
+            $parentPage->updateLastEdited();
+            $parentPage->updateSearchIndex();
+        }
+    }
+
+    public function onAfterUnpublish()
     {
         $element = $this->owner;
 
@@ -73,6 +82,9 @@ class SearchableElementExtension extends DataExtension
 
     public function isSearchable()
     {
-        return !($this->owner->config()->not_searchable || $this->owner->NotSearchable);
+        if (($this->owner->config()->not_searchable || $this->owner->NotSearchable)) {
+            return false;
+        }
+        return true;
     }
 }

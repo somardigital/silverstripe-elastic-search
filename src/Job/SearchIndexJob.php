@@ -22,7 +22,7 @@ class SearchIndexJob extends AbstractQueuedJob
      * How many records are processed each step of the job
      * @var int
      */
-    private static $limit = 500;
+    private static $limit = 100;
 
     // index to the records array currently being indexed
     private $currentIndex = 0;

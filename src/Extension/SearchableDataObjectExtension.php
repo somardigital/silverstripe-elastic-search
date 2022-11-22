@@ -77,15 +77,24 @@ class SearchableDataObjectExtension extends DataExtension
         try {
             $service = new ElasticSearchService();
 
-            $service->putDocument($this->getDocumentID(), $this->owner->searchData());
+            $docId = $this->getDocumentID();
+            $docData = $this->owner->searchData();
+
+            $service->putDocument($docId, $docData);
 
             // Update LastIndexed timestamp
             $table = DataObject::getSchema()->tableName($this->getAppliedClass());
 
-            SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+            SQLUpdate::create($table, 
+                ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+                ['ID' => $this->owner->ID]
+            )->execute();
 
             if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+                SQLUpdate::create("${table}_Live", 
+                    ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+                    ['ID' => $this->owner->ID]
+                )->execute();
             }
         } catch (\Exception $e) {
             $this->logger()->error(
@@ -102,7 +111,6 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function removeFromIndex()
     {
-
         try {
             $service = new ElasticSearchService();
             $service->removeDocument($this->getDocumentID());
@@ -168,7 +176,16 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function getSearchableBlocks(): ArrayList
     {
-        return $this->owner->ElementalArea->Elements()->filterByCallback(fn ($block) => $block->isSearchable());
+        // Don't include elements which are UNPUBLISHED!
+        $blocks = $this->owner
+            ->ElementalArea
+            ->Elements()
+            ->filterByCallback(
+                fn ($block) => $block->isSearchable() 
+                    && $block->isPublished()
+            );
+        
+        return $blocks;
     }
 
     /**
