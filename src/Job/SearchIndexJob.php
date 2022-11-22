@@ -10,7 +10,6 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 
-
 /**
  * Re-index all content in the site to Elastic Search.
  */
@@ -22,7 +21,7 @@ class SearchIndexJob extends AbstractQueuedJob
      * How many records are processed each step of the job
      * @var int
      */
-    private static $limit = 100;
+    private static $limit = 500;
 
     // index to the records array currently being indexed
     private $currentIndex = 0;
@@ -49,8 +48,8 @@ class SearchIndexJob extends AbstractQueuedJob
     {
         // this queued job is very likely to drain the allocated memory
         // so put it to unlimited for now
-        // $curMemoryLimit = ini_get('memory_limit');
-        // ini_set('memory_limit', '-1');
+        $curMemoryLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '-1');
         
         $this->update($this->config()->limit);
 
@@ -60,7 +59,7 @@ class SearchIndexJob extends AbstractQueuedJob
         }
 
         // reset memory limit back to what it was
-        //ini_set('memory_limit', $curMemoryLimit);
+        ini_set('memory_limit', $curMemoryLimit);
     }
 
     private function update($limit)
@@ -73,7 +72,9 @@ class SearchIndexJob extends AbstractQueuedJob
             return $sum + $list['count'];
         }, 0);
 
-        $records = $this->records[$this->currentIndex]['list']->limit($limit, ($this->currentStep - $indexedTypesCount));
+        $records = $this->records[$this->currentIndex]['list']
+            ->limit($limit, ($this->currentStep - $indexedTypesCount));
+        
         $documents = [];
         $skipped = 0;
 
@@ -149,8 +150,6 @@ class SearchIndexJob extends AbstractQueuedJob
                 'count' => Page::get()->count()
             ];
         }
-
-
 
         if (!empty($this->config()->IndexedClasses)) {
             foreach ($this->config()->IndexedClasses as $class) {

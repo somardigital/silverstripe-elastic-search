@@ -174,6 +174,10 @@ class SearchableDataObjectExtension extends DataExtension
         }
     }
 
+    /**
+     * Returns a list of Elemental Blocks on the current Page.
+     * Only includes LIVE versions.
+     */
     public function getSearchableBlocks(): ArrayList
     {
         // Don't include elements which are UNPUBLISHED!

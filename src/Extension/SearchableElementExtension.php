@@ -21,6 +21,9 @@ class SearchableElementExtension extends DataExtension
         // Nothing, only push to index if published
     }
 
+    /**
+     * Parent page will remove this element from index if unpublished.
+     */
     public function onAfterDelete()
     {
         $element = $this->owner;
@@ -44,6 +47,9 @@ class SearchableElementExtension extends DataExtension
         }
     }
 
+    /**
+     * Parent page will remove this element from index if unpublished.
+     */
     public function onAfterUnpublish()
     {
         $element = $this->owner;
@@ -56,7 +62,6 @@ class SearchableElementExtension extends DataExtension
 
     /**
      * To fix incorrect behaviour when nested elements
-     *
      */
     public function getParentPage()
     {
@@ -82,9 +87,6 @@ class SearchableElementExtension extends DataExtension
 
     public function isSearchable()
     {
-        if (($this->owner->config()->not_searchable || $this->owner->NotSearchable)) {
-            return false;
-        }
-        return true;
+        return !($this->owner->config()->not_searchable || $this->owner->NotSearchable);
     }
 }
