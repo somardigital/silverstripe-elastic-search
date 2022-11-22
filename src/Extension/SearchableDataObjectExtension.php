@@ -105,10 +105,12 @@ class SearchableDataObjectExtension extends DataExtension
         } catch (\Exception $e) {
             $this->logger()->error(
                 sprintf(
-                    "Unable to re-index object. %s %s %s %s",
+                    "Unable to re-index object. %s %s %s %s %s %s",
                     isset($service) ? "Index {$service->getIndexName()}," : '',
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
+                    "DocID: {$docId}",
+                    "DocData: {$docData}",
                     $e->getMessage()
                 )
             );
