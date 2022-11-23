@@ -94,7 +94,7 @@ class SearchIndexJob extends AbstractQueuedJob
                 }
 
                 $documents[] = [
-                    'id' => $record->GUID,
+                    'id' => $record->GUID,  // This doesn't include locale!!!
                     'searchData' => $record->searchData()
                 ];
             }

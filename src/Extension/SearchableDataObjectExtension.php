@@ -83,7 +83,8 @@ class SearchableDataObjectExtension extends DataExtension
         try {
             $service = new ElasticSearchService();
 
-            $docId = $this->getDocumentID();
+            //$docId = $this->getDocumentID();
+            $docId = $this->owner->GUID;    // don't include the locale
             $docData = $this->owner->searchData();
 
             $service->putDocument($docId, $docData);
@@ -109,8 +110,8 @@ class SearchableDataObjectExtension extends DataExtension
                     isset($service) ? "Index {$service->getIndexName()}," : '',
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
-                    "DocID: {$docId}",
-                    "DocData: {$docData}",
+                    "DocID: {$this->docId}",
+                    "DocData: {$this->owner->searchData()}",
                     $e->getMessage()
                 )
             );
@@ -121,13 +122,25 @@ class SearchableDataObjectExtension extends DataExtension
     {
         try {
             $service = new ElasticSearchService();
-            $service->removeDocument($this->getDocumentID());
-        } catch (\Exception $e) {
-            $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->getDocumentID()}");
+            //$service->removeDocument($this->getDocumentID());
+            $service->removeDocument($this->owner->GUID);
+            $this->logger()->error(
+                "Error in removeFromIndex(): {$e}"
+            );
+
+            $this->logger()->error(
+                "Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}"
+            );
+
+            $this->logger()->error(
+                "Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}"
+            );
         }
     }
-
+    
+    /**
+    * Return GUID ***Including*** the Locale
+    */
     public function getDocumentID()
     {
         if ($this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension')) {
@@ -136,6 +149,29 @@ class SearchableDataObjectExtension extends DataExtension
             }
         }
 
+        return $this->owner->GUID;
+    }
+
+    /**
+     * Sets GUID without triggering write hooks
+     *
+     * @return string assigned GUID
+     */
+    public function assignGUID()
+    {
+        if (empty($this->owner->GUID)) {
+            $this->owner->GUID = Uuid::uuid4()->toString();
+
+            $data = ['GUID' => $this->owner->GUID];
+            $where = ['ID' => $this->owner->ID];
+
+            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
+            SQLUpdate::create($table, $data, $where)->execute();
+
+            if ($this->owner->has_extension(Versioned::class)) {
+                SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            }
+        }
         return $this->owner->GUID;
     }
 
@@ -198,29 +234,6 @@ class SearchableDataObjectExtension extends DataExtension
             );
         
         return $blocks;
-    }
-
-    /**
-     * Sets GUID without triggering write hooks
-     *
-     * @return string assigned GUID
-     */
-    public function assignGUID()
-    {
-        if (empty($this->owner->GUID)) {
-            $this->owner->GUID = Uuid::uuid4()->toString();
-
-            $data = ['GUID' => $this->owner->GUID];
-            $where = ['ID' => $this->owner->ID];
-
-            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
-            SQLUpdate::create($table, $data, $where)->execute();
-
-            if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", $data, $where)->execute();
-            }
-        }
-        return $this->owner->GUID;
     }
 
     /**

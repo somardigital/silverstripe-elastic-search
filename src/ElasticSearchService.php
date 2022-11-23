@@ -136,13 +136,19 @@ class ElasticSearchService
             ],
         ]);
     }
-
+    
+    /**
+    * Push multiple documents to Elastic
+    */
     public function putDocuments($documents)
     {
         $body = [];
         foreach ($documents as $doc) {
             $body[] = [
-                'index' => ['_index' => $this->index, '_id' => $doc['id']]
+                'index' => [
+                    '_index' => $this->index, 
+                    '_id' => $doc['id']
+                ]
             ];
             $body[] = $doc['searchData'];
         }
@@ -152,6 +158,7 @@ class ElasticSearchService
             'body' => $body,
         ];
 
+        // CHECK LOGIC
         if (!empty(array_column(array_column($documents, 'searchData'), 'attachment'))) {
             $params['pipeline'] = 'attachment';
         }
@@ -159,6 +166,9 @@ class ElasticSearchService
         return $this->client->bulk($params);
     }
 
+    /**
+    * Push single document to Elastic
+    */
     public function putDocument($id, $document)
     {
         $params = [
@@ -174,6 +184,9 @@ class ElasticSearchService
         return $this->client->index($params);
     }
 
+    /**
+     * Remove document based on GUID
+     */
     public function removeDocument($id)
     {
         return $this->client->delete([
@@ -182,6 +195,9 @@ class ElasticSearchService
         ]);
     }
 
+    /**
+     * Search for a document
+     */
     public function searchDocuments(array $params)
     {
         $body = [
