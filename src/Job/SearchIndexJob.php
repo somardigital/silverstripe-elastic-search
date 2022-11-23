@@ -105,18 +105,7 @@ class SearchIndexJob extends AbstractQueuedJob
         }
 
         if (!empty($documents)) {
-            try {
-                // Push date to Elastic in bulk
-                $result = $service->putDocuments($documents);
-
-                if ($result['errors']) {
-                    $error = $result['items'][0]['index']['error'];
-                    throw new Exception(implode(': ', $error));
-                }
-            } catch (\Exception $e) {
-                $this->messages[] = 'Exception: ' . $e->getMessage();
-                throw $e;
-            }
+            $service->putDocuments($documents);
         }
 
         $this->messages[] = sprintf(

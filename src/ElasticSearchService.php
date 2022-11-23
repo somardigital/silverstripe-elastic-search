@@ -142,28 +142,13 @@ class ElasticSearchService
     */
     public function putDocuments($documents)
     {
-        $body = [];
         foreach ($documents as $doc) {
-            $body[] = [
-                'index' => [
-                    '_index' => $this->index, 
-                    '_id' => $doc['id']
-                ]
-            ];
-            $body[] = $doc['searchData'];
+            try {
+                $this->putDocument($doc['id'], $doc);
+            } catch (\Exception $e) {
+                $this->messages[] = 'Exception: ' . $e->getMessage();
+            } 
         }
-
-        $params = [
-            'index' => $this->index,
-            'body' => $body,
-        ];
-
-        // Check if 'attachment' key is set, if yes then add attachment
-        if (!empty(array_column(array_column($documents, 'searchData'), 'attachment'))) {
-            $params['pipeline'] = 'attachment';
-        }
-
-        return $this->client->bulk($params);
     }
 
     /**
