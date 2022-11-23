@@ -83,7 +83,6 @@ class SearchableDataObjectExtension extends DataExtension
         try {
             $service = new ElasticSearchService();
 
-            //$docId = $this->getDocumentID();
             $docId = $this->owner->GUID;    // don't include the locale
             $docData = $this->owner->searchData();
 
@@ -122,7 +121,6 @@ class SearchableDataObjectExtension extends DataExtension
     {
         try {
             $service = new ElasticSearchService();
-            //$service->removeDocument($this->getDocumentID());
             $service->removeDocument($this->owner->GUID);
         } catch(\Exception $e) {
             $this->logger()->error(
@@ -150,29 +148,6 @@ class SearchableDataObjectExtension extends DataExtension
             }
         }
 
-        return $this->owner->GUID;
-    }
-
-    /**
-     * Sets GUID without triggering write hooks
-     *
-     * @return string assigned GUID
-     */
-    public function assignGUID()
-    {
-        if (empty($this->owner->GUID)) {
-            $this->owner->GUID = Uuid::uuid4()->toString();
-
-            $data = ['GUID' => $this->owner->GUID];
-            $where = ['ID' => $this->owner->ID];
-
-            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
-            SQLUpdate::create($table, $data, $where)->execute();
-
-            if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", $data, $where)->execute();
-            }
-        }
         return $this->owner->GUID;
     }
 
@@ -217,6 +192,29 @@ class SearchableDataObjectExtension extends DataExtension
         } else {
             return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
         }
+    }
+
+    /**
+     * Sets GUID without triggering write hooks
+     *
+     * @return string assigned GUID
+     */
+    public function assignGUID()
+    {
+        if (empty($this->owner->GUID)) {
+            $this->owner->GUID = Uuid::uuid4()->toString();
+
+            $data = ['GUID' => $this->owner->GUID];
+            $where = ['ID' => $this->owner->ID];
+
+            $table = DataObject::getSchema()->tableName($this->getAppliedClass());
+            SQLUpdate::create($table, $data, $where)->execute();
+
+            if ($this->owner->has_extension(Versioned::class)) {
+                SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            }
+        }
+        return $this->owner->GUID;
     }
 
     /**
