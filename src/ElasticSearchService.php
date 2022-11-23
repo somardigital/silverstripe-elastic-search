@@ -158,7 +158,7 @@ class ElasticSearchService
             'body' => $body,
         ];
 
-        // CHECK LOGIC
+        // Check if 'attachment' key is set, if yes then add attachment
         if (!empty(array_column(array_column($documents, 'searchData'), 'attachment'))) {
             $params['pipeline'] = 'attachment';
         }
