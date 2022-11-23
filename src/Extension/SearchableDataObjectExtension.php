@@ -124,6 +124,7 @@ class SearchableDataObjectExtension extends DataExtension
             $service = new ElasticSearchService();
             //$service->removeDocument($this->getDocumentID());
             $service->removeDocument($this->owner->GUID);
+        } catch(\Exception $e) {
             $this->logger()->error(
                 "Error in removeFromIndex(): {$e}"
             );
