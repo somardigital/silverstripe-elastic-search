@@ -9,7 +9,6 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DatetimeField;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
-
 use Ramsey\Uuid\Uuid;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\TextField;

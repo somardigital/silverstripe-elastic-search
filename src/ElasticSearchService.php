@@ -139,6 +139,7 @@ class ElasticSearchService
     
     /**
     * Push multiple documents to Elastic
+    * Stopped using the bulk() function as it has trouble with mixed document data with and without attachments
     */
     public function putDocuments($documents)
     {
