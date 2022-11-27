@@ -10,7 +10,6 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 use Somar\Search\ElasticSearchService;
 
-
 /**
  * Re-index all content in the site to Elastic Search.
  */
@@ -58,14 +57,18 @@ class SearchIndexJob extends AbstractQueuedJob
     private function update($limit)
     {
         $service = new ElasticSearchService();
+
         $indexedTypes = array_filter($this->records, function ($i) {
             return $i < $this->currentIndex;
         }, ARRAY_FILTER_USE_KEY);
+
         $indexedTypesCount = array_reduce($indexedTypes, function ($sum, $list) {
             return $sum + $list['count'];
         }, 0);
 
-        $records = $this->records[$this->currentIndex]['list']->limit($limit, ($this->currentStep - $indexedTypesCount));
+        $records = $this->records[$this->currentIndex]['list']
+            ->limit($limit, ($this->currentStep - $indexedTypesCount));
+        
         $documents = [];
         $skipped = 0;
 
@@ -83,7 +86,7 @@ class SearchIndexJob extends AbstractQueuedJob
                 }
 
                 $documents[] = [
-                    'id' => $record->GUID,
+                    'id' => $record->GUID,  // This doesn't include locale!!!
                     'searchData' => $record->searchData()
                 ];
             }
@@ -94,17 +97,7 @@ class SearchIndexJob extends AbstractQueuedJob
         }
 
         if (!empty($documents)) {
-            try {
-                $result = $service->putDocuments($documents);
-
-                if ($result['errors']) {
-                    $error = $result['items'][0]['index']['error'];
-                    throw new Exception(implode(': ', $error));
-                }
-            } catch (\Exception $e) {
-                $this->messages[] = 'Exception: ' . $e->getMessage();
-                throw $e;
-            }
+            $service->putDocuments($documents);
         }
 
         $this->messages[] = sprintf(
@@ -141,8 +134,6 @@ class SearchIndexJob extends AbstractQueuedJob
                 'count' => Page::get()->count()
             ];
         }
-
-
 
         if (!empty($this->config()->IndexedClasses)) {
             foreach ($this->config()->IndexedClasses as $class) {

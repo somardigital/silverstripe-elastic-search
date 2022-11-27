@@ -9,7 +9,6 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DatetimeField;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
-
 use Ramsey\Uuid\Uuid;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\TextField;
@@ -70,6 +69,12 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function updateSearchIndex()
     {
+        // DO NOT index documents that are not LIVE!
+        // Need this check because publishing an Elemental block on this page will trigger this function!
+        if (!$this->owner->isPublished()) {
+            return;
+        }
+        
         if (!$this->owner->GUID) {
             $this->owner->assignGUID();
         }
@@ -77,23 +82,34 @@ class SearchableDataObjectExtension extends DataExtension
         try {
             $service = new ElasticSearchService();
 
-            $service->putDocument($this->getDocumentID(), $this->owner->searchData());
+            $docId = $this->owner->GUID;    // don't include the locale
+            $docData = $this->owner->searchData();
+
+            $service->putDocument($docId, $docData);
 
             // Update LastIndexed timestamp
             $table = DataObject::getSchema()->tableName($this->getAppliedClass());
 
-            SQLUpdate::create($table, ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+            SQLUpdate::create($table, 
+                ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+                ['ID' => $this->owner->ID]
+            )->execute();
 
             if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", ['LastIndexed' => DBDatetime::now()->Rfc2822()], ['ID' => $this->owner->ID])->execute();
+                SQLUpdate::create("${table}_Live", 
+                    ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+                    ['ID' => $this->owner->ID]
+                )->execute();
             }
         } catch (\Exception $e) {
             $this->logger()->error(
                 sprintf(
-                    "Unable to re-index object. %s %s %s %s",
+                    "Unable to re-index object. %s %s %s %s %s %s",
                     isset($service) ? "Index {$service->getIndexName()}," : '',
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
+                    "DocID: {$this->docId}",
+                    "DocData: {$this->owner->searchData()}",
                     $e->getMessage()
                 )
             );
@@ -102,16 +118,27 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function removeFromIndex()
     {
-
         try {
             $service = new ElasticSearchService();
-            $service->removeDocument($this->getDocumentID());
-        } catch (\Exception $e) {
-            $this->logger()->error("Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}");
-            $this->logger()->error("Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->getDocumentID()}");
+            $service->removeDocument($this->owner->GUID);
+        } catch(\Exception $e) {
+            $this->logger()->error(
+                "Error in removeFromIndex(): {$e}"
+            );
+
+            $this->logger()->error(
+                "Unable to remove record from elastic index {$service->getIndexName()} onDelete. ID: {$this->owner->ID}, Title: {$this->owner->Title}"
+            );
+
+            $this->logger()->error(
+                "Please remove from index {$service->getIndexName()} to avoid returning outdated search results. GUID: {$this->owner->GUID}"
+            );
         }
     }
-
+    
+    /**
+    * Return GUID ***Including*** the Locale
+    */
     public function getDocumentID()
     {
         if ($this->owner->hasExtension('TractorCow\Fluent\Extension\FluentExtension')) {
@@ -166,11 +193,6 @@ class SearchableDataObjectExtension extends DataExtension
         }
     }
 
-    public function getSearchableBlocks(): ArrayList
-    {
-        return $this->owner->ElementalArea->Elements()->filterByCallback(fn ($block) => $block->isSearchable());
-    }
-
     /**
      * Sets GUID without triggering write hooks
      *
@@ -192,6 +214,24 @@ class SearchableDataObjectExtension extends DataExtension
             }
         }
         return $this->owner->GUID;
+    }
+
+    /**
+     * Returns a list of Elemental Blocks on the current Page.
+     * Only includes LIVE versions.
+     */
+    public function getSearchableBlocks(): ArrayList
+    {
+        // Don't include elements which are UNPUBLISHED!
+        $blocks = $this->owner
+            ->ElementalArea
+            ->Elements()
+            ->filterByCallback(
+                fn ($block) => $block->isSearchable() 
+                    && $block->isPublished()
+            );
+        
+        return $blocks;
     }
 
     /**
@@ -246,6 +286,7 @@ class SearchableDataObjectExtension extends DataExtension
 
     /**
      * Remove this object from elastic index.
+     * This is also called when page is UNPUBLISHED.
      */
     public function onAfterDelete()
     {
@@ -287,12 +328,18 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function isIndexed()
     {
-        return !($this->owner->config()->disable_indexing || $this->owner->DisableIndexing || ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch));
+        $check = $this->owner->config()->disable_indexing || 
+            $this->owner->DisableIndexing || 
+            ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch);
+
+        return !$check;
     }
 
     public function updateIndexOnSave()
     {
-        return $this->isIndexed() && false !== $this->owner->config()->update_index_on_save;
+        $check = $this->isIndexed() && false !== $this->owner->config()->update_index_on_save;
+
+        return $check;
     }
 
     /**

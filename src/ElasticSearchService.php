@@ -136,29 +136,25 @@ class ElasticSearchService
             ],
         ]);
     }
-
+    
+    /**
+    * Push multiple documents to Elastic
+    * Stopped using the bulk() function as it has trouble with mixed document data with and without attachments
+    */
     public function putDocuments($documents)
     {
-        $body = [];
         foreach ($documents as $doc) {
-            $body[] = [
-                'index' => ['_index' => $this->index, '_id' => $doc['id']]
-            ];
-            $body[] = $doc['searchData'];
+            try {
+                $this->putDocument($doc['id'], $doc);
+            } catch (\Exception $e) {
+                $this->messages[] = 'Exception: ' . $e->getMessage();
+            } 
         }
-
-        $params = [
-            'index' => $this->index,
-            'body' => $body,
-        ];
-
-        if (!empty(array_column(array_column($documents, 'searchData'), 'attachment'))) {
-            $params['pipeline'] = 'attachment';
-        }
-
-        return $this->client->bulk($params);
     }
 
+    /**
+    * Push single document to Elastic
+    */
     public function putDocument($id, $document)
     {
         $params = [
@@ -174,6 +170,9 @@ class ElasticSearchService
         return $this->client->index($params);
     }
 
+    /**
+     * Remove document based on GUID
+     */
     public function removeDocument($id)
     {
         return $this->client->delete([
@@ -182,6 +181,9 @@ class ElasticSearchService
         ]);
     }
 
+    /**
+     * Search for a document
+     */
     public function searchDocuments(array $params)
     {
         $body = [
