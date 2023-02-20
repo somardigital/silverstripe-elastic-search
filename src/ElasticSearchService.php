@@ -136,7 +136,7 @@ class ElasticSearchService
             ],
         ]);
     }
-    
+
     /**
     * Push multiple documents to Elastic
     * Stopped using the bulk() function as it has trouble with mixed document data with and without attachments
@@ -145,10 +145,10 @@ class ElasticSearchService
     {
         foreach ($documents as $doc) {
             try {
-                $this->putDocument($doc['id'], $doc);
+                $this->putDocument($doc['id'], $doc['searchData']);
             } catch (\Exception $e) {
                 $this->messages[] = 'Exception: ' . $e->getMessage();
-            } 
+            }
         }
     }
 
