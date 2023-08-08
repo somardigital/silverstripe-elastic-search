@@ -74,7 +74,7 @@ class SearchableDataObjectExtension extends DataExtension
         if (!$this->owner->isPublished()) {
             return;
         }
-        
+
         if (!$this->owner->GUID) {
             $this->owner->assignGUID();
         }
@@ -90,14 +90,14 @@ class SearchableDataObjectExtension extends DataExtension
             // Update LastIndexed timestamp
             $table = DataObject::getSchema()->tableName($this->getAppliedClass());
 
-            SQLUpdate::create($table, 
-                ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+            SQLUpdate::create($table,
+                ['LastIndexed' => DBDatetime::now()->Rfc2822()],
                 ['ID' => $this->owner->ID]
             )->execute();
 
             if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", 
-                    ['LastIndexed' => DBDatetime::now()->Rfc2822()], 
+                SQLUpdate::create("{$table}_Live",
+                    ['LastIndexed' => DBDatetime::now()->Rfc2822()],
                     ['ID' => $this->owner->ID]
                 )->execute();
             }
@@ -108,7 +108,7 @@ class SearchableDataObjectExtension extends DataExtension
                     isset($service) ? "Index {$service->getIndexName()}," : '',
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
-                    "DocID: {$this->docId}",
+                    "DocID: {$this->owner->docId}",
                     "DocData: {$this->owner->searchData()}",
                     $e->getMessage()
                 )
@@ -135,7 +135,7 @@ class SearchableDataObjectExtension extends DataExtension
             );
         }
     }
-    
+
     /**
     * Return GUID ***Including*** the Locale
     */
@@ -210,7 +210,7 @@ class SearchableDataObjectExtension extends DataExtension
             SQLUpdate::create($table, $data, $where)->execute();
 
             if ($this->owner->has_extension(Versioned::class)) {
-                SQLUpdate::create("${table}_Live", $data, $where)->execute();
+                SQLUpdate::create("{$table}_Live", $data, $where)->execute();
             }
         }
         return $this->owner->GUID;
@@ -227,10 +227,10 @@ class SearchableDataObjectExtension extends DataExtension
             ->ElementalArea
             ->Elements()
             ->filterByCallback(
-                fn ($block) => $block->isSearchable() 
+                fn ($block) => $block->isSearchable()
                     && $block->isPublished()
             );
-        
+
         return $blocks;
     }
 
@@ -328,8 +328,8 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function isIndexed()
     {
-        $check = $this->owner->config()->disable_indexing || 
-            $this->owner->DisableIndexing || 
+        $check = $this->owner->config()->disable_indexing ||
+            $this->owner->DisableIndexing ||
             ($this->owner->hasField('ShowInSearch') && !$this->owner->ShowInSearch);
 
         return !$check;
