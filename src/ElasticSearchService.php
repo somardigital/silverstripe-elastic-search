@@ -5,7 +5,7 @@ namespace Somar\Search;
 use Exception;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Environment;
-use Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\ClientBuilder;
 use Page;
 use SilverStripe\Control\Director;
 use SilverStripe\Core\Extensible;
