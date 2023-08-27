@@ -102,6 +102,9 @@ class SearchableDataObjectExtension extends DataExtension
                 )->execute();
             }
         } catch (\Exception $e) {
+            $docData = $this->owner->searchData();
+            $docDataString = is_array($docData) ? json_encode($docData) : $docData;
+
             $this->logger()->error(
                 sprintf(
                     "Unable to re-index object. %s %s %s %s %s %s",
@@ -109,7 +112,7 @@ class SearchableDataObjectExtension extends DataExtension
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
                     "DocID: {$this->owner->docId}",
-                    "DocData: {$this->owner->searchData()}",
+                    "DocData: {$docDataString}",
                     $e->getMessage()
                 )
             );

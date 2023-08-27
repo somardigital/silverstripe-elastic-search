@@ -11,7 +11,7 @@
     "license": "BSD-3-Clause",
     "require": {
         "php": ">=8.2.0",
-        "elasticsearch/elasticsearch": "^8.9",
+        "elasticsearch/elasticsearch": "^7.6",
         "ramsey/uuid": "^4.7",
         "symbiote/silverstripe-queuedjobs": "^5.0",
         "silverstripe/segment-field": "^3.0"
