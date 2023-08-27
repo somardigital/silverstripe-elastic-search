@@ -322,7 +322,7 @@ class SearchableDataObjectExtension extends DataExtension
 
         SQLUpdate::create($table, $data, $where)->execute();
         if ($this->owner->has_extension(Versioned::class)) {
-            SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            SQLUpdate::create("{$table}_Live", $data, $where)->execute();
         }
     }
 
