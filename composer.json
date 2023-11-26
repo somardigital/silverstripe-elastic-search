@@ -13,7 +13,7 @@
         "php": ">=8.2.0",
         "elasticsearch/elasticsearch": "^7.6",
         "ramsey/uuid": "^4.7",
-        "symbiote/silverstripe-queuedjobs": "^5.0",
+        "symbiote/silverstripe-queuedjobs": " ^4.0 || ^5.0",
         "silverstripe/segment-field": "^3.0"
     },
     "require-dev": {
