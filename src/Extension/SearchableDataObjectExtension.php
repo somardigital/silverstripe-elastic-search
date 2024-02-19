@@ -103,6 +103,9 @@ class SearchableDataObjectExtension extends DataExtension
                 )->execute();
             }
         } catch (\Exception $e) {
+            $docData = $this->owner->searchData();
+            $docDataString = is_array($docData) ? json_encode($docData) : $docData;
+
             $this->logger()->error(
                 sprintf(
                     "Unable to re-index object. %s %s %s %s %s %s",
@@ -110,7 +113,7 @@ class SearchableDataObjectExtension extends DataExtension
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
                     "DocID: {$this->owner->docId}",
-                    "DocData: {$this->owner->searchData()}",
+                    "DocData: {$docDataString}",
                     $e->getMessage()
                 )
             );
@@ -328,7 +331,7 @@ class SearchableDataObjectExtension extends DataExtension
 
         SQLUpdate::create($table, $data, $where)->execute();
         if ($this->owner->has_extension(Versioned::class)) {
-            SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            SQLUpdate::create("{$table}_Live", $data, $where)->execute();
         }
     }
 
