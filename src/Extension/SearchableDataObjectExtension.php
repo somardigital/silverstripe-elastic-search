@@ -17,6 +17,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\Parsers\ShortcodeParser;
+use SilverStripe\CMS\Model\RedirectorPage;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 use Somar\Search\Utils\Helpers;
@@ -185,6 +186,11 @@ class SearchableDataObjectExtension extends DataExtension
     public function getPlainContent(): string
     {
         ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
+
+        // Redirector pages have no content field
+        if ($this->owner->ClassName == RedirectorPage::class) {
+            return DBField::create_field('HTMLText', '')->Plain();
+        }
 
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
             return Helpers::get_blocks_plain_content($this->owner->getSearchableBlocks()->toArray());
