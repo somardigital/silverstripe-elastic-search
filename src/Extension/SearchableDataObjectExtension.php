@@ -17,6 +17,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\View\Parsers\ShortcodeParser;
+use SilverStripe\CMS\Model\RedirectorPage;
 use Somar\Search\ElasticSearchService;
 use Somar\Search\Log\SearchLogger;
 use Somar\Search\Utils\Helpers;
@@ -102,6 +103,9 @@ class SearchableDataObjectExtension extends DataExtension
                 )->execute();
             }
         } catch (\Exception $e) {
+            $docData = $this->owner->searchData();
+            $docDataString = is_array($docData) ? json_encode($docData) : $docData;
+
             $this->logger()->error(
                 sprintf(
                     "Unable to re-index object. %s %s %s %s %s %s",
@@ -109,7 +113,7 @@ class SearchableDataObjectExtension extends DataExtension
                     "ID: {$this->owner->ID},",
                     "Title: {$this->owner->Title},",
                     "DocID: {$this->owner->docId}",
-                    "DocData: {$this->owner->searchData()}",
+                    "DocData: {$docDataString}",
                     $e->getMessage()
                 )
             );
@@ -185,6 +189,11 @@ class SearchableDataObjectExtension extends DataExtension
     public function getPlainContent(): string
     {
         ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
+
+        // Redirector pages have no content field
+        if ($this->owner->ClassName == RedirectorPage::class) {
+            return DBField::create_field('HTMLText', '')->Plain();
+        }
 
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
             return Helpers::get_blocks_plain_content($this->owner->getSearchableBlocks()->toArray());
@@ -322,7 +331,7 @@ class SearchableDataObjectExtension extends DataExtension
 
         SQLUpdate::create($table, $data, $where)->execute();
         if ($this->owner->has_extension(Versioned::class)) {
-            SQLUpdate::create("${table}_Live", $data, $where)->execute();
+            SQLUpdate::create("{$table}_Live", $data, $where)->execute();
         }
     }
 
