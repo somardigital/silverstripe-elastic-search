@@ -78,6 +78,7 @@ class SearchPageController extends PageController
             }
 
             $resultData = [
+                'id' => !empty($data['object_id']) ? $data['object_id'] : '',
                 'title' => !empty($data['title']) ? $data['title'] : '',
                 'url' => !empty($data['url']) ? $data['url'] : '',
                 'type' => 'page',
@@ -90,6 +91,9 @@ class SearchPageController extends PageController
 
             $resultsData->push($resultData);
         }
+
+        // Remove duplicates
+        $resultsData = $resultsData->removeDuplicates('id');
 
         return [
             'results' => $resultsData->toNestedArray(),
