@@ -190,7 +190,14 @@ class SearchableDataObjectExtension extends DataExtension
         ShortcodeParser::config()->set('RenderSearchableContentOnly', true);
 
         if ($this->owner->hasExtension('DNADesign\Elemental\Extensions\ElementalPageExtension')) {
-            return Helpers::get_blocks_plain_content($this->owner->getSearchableBlocks()->toArray());
+            $blocks = $this->owner->getSearchableBlocks();
+
+            if (!$blocks->count()) {
+                // If there are no blocks then the elemental area probably doesn't exist
+                return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
+            }
+
+            return Helpers::get_blocks_plain_content($blocks->toArray());
         } else {
             return DBField::create_field('HTMLText', $this->owner->Content)->Plain();
         }
@@ -225,6 +232,11 @@ class SearchableDataObjectExtension extends DataExtension
      */
     public function getSearchableBlocks(): ArrayList
     {
+        // If the elemental area doesn't exist return empty list
+        if (!$this->owner->ElementalArea()->exists()) {
+            return ArrayList::create();
+        }
+
         // Don't include elements which are UNPUBLISHED!
         $blocks = $this->owner
             ->ElementalArea
