@@ -289,12 +289,7 @@ class SearchableDataObjectExtension extends DataExtension
 
     public function onAfterUnpublish()
     {
-        // Skip if already unpublished from a delete() call
-        if (!$this->owner->isPublished()) {
-            return false;
-        }
-
-        if ($this->isIndexed()) {
+        if (!empty($this->owner->GUID)) {
             $this->removeFromIndex();
         }
     }
@@ -307,7 +302,7 @@ class SearchableDataObjectExtension extends DataExtension
     {
         parent::onAfterDelete();
 
-        if ($this->isIndexed()) {
+        if (!empty($this->owner->GUID)) {
             $this->removeFromIndex();
         }
     }
