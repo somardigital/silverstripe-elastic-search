@@ -3,7 +3,7 @@
 namespace Somar\Search\Extension;
 
 use Page;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\DatetimeField;
@@ -12,7 +12,7 @@ use SilverStripe\ORM\FieldType\DBField;
 use Ramsey\Uuid\Uuid;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\TextField;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
@@ -24,7 +24,7 @@ use Somar\Search\Utils\Helpers;
 /**
  * Allow a DataObject to be indexed in Elastic.
  */
-class SearchableDataObjectExtension extends DataExtension
+class SearchableDataObjectExtension extends Extension
 {
     use FluentTrait;
 

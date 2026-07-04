@@ -3,13 +3,13 @@
 namespace Somar\Search\Extension;
 
 use SilverStripe\CMS\Model\SiteTree;
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Extension;
 use SilverStripe\Versioned\Versioned;
 
 /**
  * Allow a Page to detect when Elemental content has changed
  */
-class SearchableElementExtension extends DataExtension
+class SearchableElementExtension extends Extension
 {
     /**
      * If Element fields have changed, then re-index Page content

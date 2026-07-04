@@ -4,14 +4,20 @@ namespace Somar\Search\Task;
 
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
+use SilverStripe\PolyExecution\PolyOutput;
 use Somar\Search\ElasticSearchService;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
 
 class CreateIndexTask extends BuildTask
 {
-    protected $title = 'Create Elasticsearch index';
-    protected $description = "Creates index if it doesn't exist, and sets mapping config & ingest pipeline";
+    protected string $title = 'Create Elasticsearch index';
 
-    public function run($request)
+    protected static string $description = "Creates index if it doesn't exist, and sets mapping config & ingest pipeline";
+
+    private static bool $is_enabled = true;
+
+    protected function execute(InputInterface $input, PolyOutput $output): int
     {
         $service = new ElasticSearchService();
 
@@ -31,5 +37,7 @@ class CreateIndexTask extends BuildTask
         $service->setIndexMappings();
 
         DB::alteration_message("Done.");
+
+        return Command::SUCCESS;
     }
 }

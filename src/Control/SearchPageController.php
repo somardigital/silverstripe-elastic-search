@@ -6,7 +6,7 @@ use PageController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Environment;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\Model\List\ArrayList;
 use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\View\Requirements;
 use Somar\Search\ElasticSearchService;
