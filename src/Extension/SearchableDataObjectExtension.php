@@ -300,8 +300,6 @@ class SearchableDataObjectExtension extends Extension
      */
     public function onAfterDelete()
     {
-        parent::onAfterDelete();
-
         if (!empty($this->owner->GUID)) {
             $this->removeFromIndex();
         }
