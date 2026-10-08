@@ -27,6 +27,7 @@
           :class="{
             'pagination__button--active': currentPage == page,
           }"
+          :aria-current="currentPage == page ? 'page' : null"
         >
           {{ page }}
         </button>
